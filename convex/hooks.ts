@@ -12,6 +12,13 @@ export const listByUser = query({
   },
 });
 
+export const listAll = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("hooks").collect();
+  },
+});
+
 export const getById = query({
   args: { id: v.id("hooks") },
   handler: async (ctx, args) => {

@@ -16,8 +16,10 @@ import { Route as OauthLoginApiRouteImport } from './routes/oauth/login-api'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
 import { Route as JwksJsonRouteImport } from './routes/jwks.json'
 import { Route as DashboardNewRouteImport } from './routes/dashboard/new'
+import { Route as ApiTapEventsRouteImport } from './routes/api/tap-events'
 import { Route as OauthClientMetadataJsonRouteImport } from './routes/oauth/client-metadata.json'
 import { Route as DashboardHooksHookIdRouteImport } from './routes/dashboard/hooks/$hookId'
+import { Route as ApiHooksAddRepoRouteImport } from './routes/api/hooks/addRepo'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -54,6 +56,11 @@ const DashboardNewRoute = DashboardNewRouteImport.update({
   path: '/dashboard/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTapEventsRoute = ApiTapEventsRouteImport.update({
+  id: '/api/tap-events',
+  path: '/api/tap-events',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OauthClientMetadataJsonRoute = OauthClientMetadataJsonRouteImport.update({
   id: '/oauth/client-metadata/json',
   path: '/oauth/client-metadata/json',
@@ -64,38 +71,49 @@ const DashboardHooksHookIdRoute = DashboardHooksHookIdRouteImport.update({
   path: '/dashboard/hooks/$hookId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHooksAddRepoRoute = ApiHooksAddRepoRouteImport.update({
+  id: '/api/hooks/addRepo',
+  path: '/api/hooks/addRepo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/tap-events': typeof ApiTapEventsRoute
   '/dashboard/new': typeof DashboardNewRoute
   '/jwks/json': typeof JwksJsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/login-api': typeof OauthLoginApiRoute
   '/oauth/logout': typeof OauthLogoutRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/api/hooks/addRepo': typeof ApiHooksAddRepoRoute
   '/dashboard/hooks/$hookId': typeof DashboardHooksHookIdRoute
   '/oauth/client-metadata/json': typeof OauthClientMetadataJsonRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/tap-events': typeof ApiTapEventsRoute
   '/dashboard/new': typeof DashboardNewRoute
   '/jwks/json': typeof JwksJsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/login-api': typeof OauthLoginApiRoute
   '/oauth/logout': typeof OauthLogoutRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/api/hooks/addRepo': typeof ApiHooksAddRepoRoute
   '/dashboard/hooks/$hookId': typeof DashboardHooksHookIdRoute
   '/oauth/client-metadata/json': typeof OauthClientMetadataJsonRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/tap-events': typeof ApiTapEventsRoute
   '/dashboard/new': typeof DashboardNewRoute
   '/jwks/json': typeof JwksJsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/login-api': typeof OauthLoginApiRoute
   '/oauth/logout': typeof OauthLogoutRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/api/hooks/addRepo': typeof ApiHooksAddRepoRoute
   '/dashboard/hooks/$hookId': typeof DashboardHooksHookIdRoute
   '/oauth/client-metadata/json': typeof OauthClientMetadataJsonRoute
 }
@@ -103,46 +121,54 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/api/tap-events'
     | '/dashboard/new'
     | '/jwks/json'
     | '/oauth/callback'
     | '/oauth/login-api'
     | '/oauth/logout'
     | '/dashboard/'
+    | '/api/hooks/addRepo'
     | '/dashboard/hooks/$hookId'
     | '/oauth/client-metadata/json'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api/tap-events'
     | '/dashboard/new'
     | '/jwks/json'
     | '/oauth/callback'
     | '/oauth/login-api'
     | '/oauth/logout'
     | '/dashboard'
+    | '/api/hooks/addRepo'
     | '/dashboard/hooks/$hookId'
     | '/oauth/client-metadata/json'
   id:
     | '__root__'
     | '/'
+    | '/api/tap-events'
     | '/dashboard/new'
     | '/jwks/json'
     | '/oauth/callback'
     | '/oauth/login-api'
     | '/oauth/logout'
     | '/dashboard/'
+    | '/api/hooks/addRepo'
     | '/dashboard/hooks/$hookId'
     | '/oauth/client-metadata/json'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiTapEventsRoute: typeof ApiTapEventsRoute
   DashboardNewRoute: typeof DashboardNewRoute
   JwksJsonRoute: typeof JwksJsonRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
   OauthLoginApiRoute: typeof OauthLoginApiRoute
   OauthLogoutRoute: typeof OauthLogoutRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  ApiHooksAddRepoRoute: typeof ApiHooksAddRepoRoute
   DashboardHooksHookIdRoute: typeof DashboardHooksHookIdRoute
   OauthClientMetadataJsonRoute: typeof OauthClientMetadataJsonRoute
 }
@@ -198,6 +224,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof DashboardNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/tap-events': {
+      id: '/api/tap-events'
+      path: '/api/tap-events'
+      fullPath: '/api/tap-events'
+      preLoaderRoute: typeof ApiTapEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/oauth/client-metadata/json': {
       id: '/oauth/client-metadata/json'
       path: '/oauth/client-metadata/json'
@@ -212,17 +245,26 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof DashboardHooksHookIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/hooks/addRepo': {
+      id: '/api/hooks/addRepo'
+      path: '/api/hooks/addRepo'
+      fullPath: '/api/hooks/addRepo'
+      preLoaderRoute: typeof ApiHooksAddRepoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiTapEventsRoute: ApiTapEventsRoute,
   DashboardNewRoute: DashboardNewRoute,
   JwksJsonRoute: JwksJsonRoute,
   OauthCallbackRoute: OauthCallbackRoute,
   OauthLoginApiRoute: OauthLoginApiRoute,
   OauthLogoutRoute: OauthLogoutRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  ApiHooksAddRepoRoute: ApiHooksAddRepoRoute,
   DashboardHooksHookIdRoute: DashboardHooksHookIdRoute,
   OauthClientMetadataJsonRoute: OauthClientMetadataJsonRoute,
 }

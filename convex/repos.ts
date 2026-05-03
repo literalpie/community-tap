@@ -1,7 +1,7 @@
-import { query, internalMutation } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
-export const registerRepo = internalMutation({
+export const registerRepo = mutation({
   args: {
     repoDid: v.string(),
     registeredBy: v.string(),
