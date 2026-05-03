@@ -3,11 +3,13 @@ import { Agent } from "@atproto/api";
 interface CreateHookRecordArgs {
   nsid: string;
   webhookUrl: string;
+  serviceId: string;
 }
 
 interface HookRecordValue {
   nsid: string;
   webhookUrl: string;
+  serviceId: string;
   createdAt: string;
 }
 
@@ -27,6 +29,7 @@ export async function createHookRecord(
   const record = {
     nsid: args.nsid,
     webhookUrl: args.webhookUrl,
+    serviceId: args.serviceId,
     createdAt: new Date().toISOString(),
   };
 

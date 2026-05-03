@@ -62,11 +62,15 @@ Build the full UI and wire hook config to both PDS and Convex. No event delivery
 
 Deploy Tap and wire up the fan-out. Hooks start doing something.
 
-- Deploy Tap on Railway with persistent volume (SQLite)
+- Deploy Tap on Railway with persistent volume (SQLite), no `TAP_SIGNAL_COLLECTION` set — dynamic mode only
 - Convex `httpAction` receives events from Tap, looks up matching hooks, delivers to user webhooks via `Promise.allSettled`
 - Log every delivery attempt to the `events` table
-- When a hook is registered, call Tap's admin API to add the NSID to its watch list
+- Expose a `POST /hooks/addRepo` endpoint that proxies to Tap's `POST /repos/add` — developers call this with a DID whenever one of their users creates a relevant record
 - Surface recent event log per hook in the UI
+
+> **Note:** without collection signal mode, Community Tap does not auto-discover repos network-wide. Repo discovery is the developer's responsibility — they must call `/hooks/addRepo` for each of their users' DIDs. This is an acceptable tradeoff for a toy app service.
+
+> **Auth for `/hooks/addRepo`:** this is a machine-to-machine endpoint called by the developer's backend, not the browser. AT Proto OAuth does not apply here. Protect it with a simple shared secret in an env var.
 
 ---
 
@@ -77,5 +81,6 @@ Make it safe to open publicly.
 - Enforce limits derived from the `events` table: 1000 events/day and 50 events/minute per user
 - When a limit is hit: pause delivery, show warning in UI
 - Per-hook webhook timeout cap so slow endpoints don't block others
+- Per-user API keys for `/hooks/addRepo` (replacing the Phase 2 shared secret), with validation that the submitted DID has a matching hook in Convex
 - Admin view (your DID only): all users, hook counts, pause/unpause
 - Public landing page + README

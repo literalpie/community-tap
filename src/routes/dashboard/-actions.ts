@@ -10,6 +10,8 @@ import {
 import { ConvexHttpClient } from "convex/browser";
 import { api } from '../../../convex/_generated/api';
 
+const SERVICE_ID = process.env.COMMUNITY_TAP_SERVICE_ID;
+
 function getConvexHttpClient(): ConvexHttpClient {
   const url = import.meta.env.VITE_CONVEX_URL;
   if (!url) {
@@ -79,9 +81,13 @@ export const createHookOnPDS = createServerFn({ method: 'POST' })
     // Write to PDS
     let pdsResult: { uri: string; cid: string }
     try {
+      if(!SERVICE_ID) {
+        throw new Error('Service ID is not configured')
+      }
       pdsResult = await createHookRecord(agent, did, {
         nsid: data.nsid,
         webhookUrl: data.webhookUrl,
+        serviceId: SERVICE_ID,
       })
     } catch (pdsErr) {
       throw new Error(
@@ -159,7 +165,8 @@ export const syncHooksFromPDS = createServerFn({ method: 'POST' }).handler(
 
     // Get PDS records
     const pdsRecords = await listHookRecords(agent, did)
-    const pdsUris = new Set(pdsRecords.map((r) => r.uri))
+    const matchingRecords = pdsRecords.filter((r) => r.value.serviceId === SERVICE_ID)
+    const pdsUris = new Set(matchingRecords.map((r) => r.uri))
 
     // Get Convex records
     const convexHooks = await convex.query(api.hooks.listByUser, { userDid: did })
@@ -169,7 +176,7 @@ export const syncHooksFromPDS = createServerFn({ method: 'POST' }).handler(
     let removed = 0
 
     // In PDS but not Convex → upsert
-    for (const record of pdsRecords) {
+    for (const record of matchingRecords) {
       if (!convexUris.has(record.uri)) {
         await convex.mutation(api.hooks.upsert, {
           userDid: did,
