@@ -11,4 +11,12 @@ export default defineSchema({
     text: v.string(),
     completed: v.boolean(),
   }),
+  authStates: defineTable({
+    key: v.string(),
+    state: v.any(),
+  }).index("by_key", ["key"]),
+  sessions: defineTable({
+    did: v.string(),
+    session: v.any(),
+  }).index("by_did", ["did"]),
 })

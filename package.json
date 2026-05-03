@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "vite dev --host --port 3000",
     "build": "vite build",
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
@@ -13,6 +13,10 @@
     "check": "biome check"
   },
   "dependencies": {
+    "@atproto/common-web": "^0.4.21",
+    "@atproto/identity": "^0.4.12",
+    "@atproto/oauth-client-node": "^0.3.17",
+    "@atproto/syntax": "^0.5.4",
     "@fontsource/inter": "^5.1.1",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/router-plugin": "^1.133.21",
