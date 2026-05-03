@@ -18,6 +18,7 @@
     "@atproto/identity": "^0.4.12",
     "@atproto/oauth-client-node": "^0.3.17",
     "@atproto/syntax": "^0.5.4",
+    "@atproto/tap": "^0.2.13",
     "@fontsource/inter": "^5.1.1",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/router-plugin": "^1.133.21",

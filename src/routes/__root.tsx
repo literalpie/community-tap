@@ -40,17 +40,15 @@ function RootComponent() {
         <header class="border-b">
           <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <a href="/" class="text-xl font-bold">Community Tap</a>
-            <div>
+            <div class="flex items-center gap-4">
               {data().session ? (
-                <div class="flex items-center gap-4">
+                <>
+                  <a href="/dashboard" class="text-sm text-blue-600 hover:underline">Dashboard</a>
                   <span class="text-sm text-zinc-600">{data().session?.did}</span>
                   <LogoutButton />
-                </div>
+                </>
               ) : (
                 <a href="/" class="text-sm text-blue-600 hover:underline">Sign in</a>
-              )}
-              {data().session && (
-                <a href="/dashboard" class="text-sm text-blue-600 hover:underline">Dashboard</a>
               )}
             </div>
           </div>

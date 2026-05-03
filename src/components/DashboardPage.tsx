@@ -6,6 +6,7 @@ import {
   syncHooksFromPDS as syncAction,
 } from '~/routes/dashboard/-actions'
 import { Route } from '~/routes/dashboard'
+import { Link } from '@tanstack/solid-router'
 
 export default function DashboardPage() {
   const loaderData = Route.useLoaderData()
@@ -28,10 +29,10 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleDelete(uri: string) {
+  async function handleDelete(recordUri: string) {
     if (!confirm('Are you sure you want to delete this hook?')) return
     try {
-      await deleteHookAction({ data: { uri } })
+      await deleteHookAction({ data: { uri: recordUri } })
       await loadHooks()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete hook')
@@ -116,7 +117,15 @@ export default function DashboardPage() {
               <For each={hooks()}>
                 {(hook) => (
                   <tr class="border-b last:border-b-0 hover:bg-zinc-50">
-                    <td class="px-4 py-3 text-sm font-mono">{hook.nsid}</td>
+                    <td class="px-4 py-3 text-sm font-mono">
+                      <Link 
+                        to="/dashboard/hooks/$hookId"
+                        params={{ hookId: hook._id }}
+                        class="text-blue-600 hover:underline"
+                      >
+                        {hook.nsid}
+                      </Link>
+                    </td>
                     <td class="px-4 py-3 text-sm text-zinc-600">
                       {truncateUrl(hook.webhookUrl)}
                     </td>
@@ -124,17 +133,17 @@ export default function DashboardPage() {
                     <td class="px-4 py-3">
                       <span
                         class={`inline-flex px-2 py-1 text-xs rounded-full ${
-                          hook.enabled
+                          hook.isActive
                             ? 'bg-green-100 text-green-700'
                             : 'bg-zinc-100 text-zinc-600'
                         }`}
                       >
-                        {hook.enabled ? 'Enabled' : 'Disabled'}
+                        {hook.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td class="px-4 py-3 text-right">
                       <button
-                        onClick={() => handleDelete(hook.pdsUri)}
+                        onClick={() => handleDelete(hook.recordUri)}
                         class="text-sm text-red-600 hover:text-red-700"
                       >
                         Delete

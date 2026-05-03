@@ -10,3 +10,6 @@ dist-ssr
 .output
 .vinxi
 __unconfig*
+tap.db
+tap.db-shm
+tap.db-wal

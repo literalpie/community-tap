@@ -3,6 +3,7 @@ import { getCookie } from '@tanstack/solid-start/server'
 import { getOAuthClient } from '~/auth/client'
 import { ConvexHttpClient } from "convex/browser";
 import { api } from '../../../convex/_generated/api';
+import type { Doc, Id } from '../../../convex/_generated/dataModel';
 
 function getConvexHttpClient(): ConvexHttpClient {
   const url = import.meta.env.VITE_CONVEX_URL;
@@ -30,6 +31,33 @@ async function getAuthenticatedDid(): Promise<string> {
 export const listHooks = createServerFn({ method: 'GET' }).handler(async () => {
   const did = await getAuthenticatedDid()
   const convex = getConvexHttpClient()
-  const hooks = await convex.query(api.hooks.listByUser, { userDid: did })
-  return { did, hooks }
+  const hooks = await convex.query(api.hooks.listByUser, { userId: did })
+  return { did, hooks: hooks as Doc<'hooks'>[] }
 })
+
+export interface GetHookResult {
+  hook: Doc<'hooks'>;
+  events: Doc<'events'>[];
+}
+
+export const getHookById = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown) => {
+    if (typeof data !== 'object' || data === null || !('hookId' in data) || typeof (data as any).hookId !== 'string') {
+      throw new Error('hookId is required')
+    }
+    return data as { hookId: string }
+  })
+  .handler(async (ctx): Promise<GetHookResult> => {
+    const did = await getAuthenticatedDid()
+    const convex = getConvexHttpClient()
+    const hookIdTyped = ctx.data.hookId as Id<'hooks'>
+    const hook = await convex.query(api.hooks.getById, { id: hookIdTyped })
+    if (!hook || hook.userId !== did) {
+      throw new Error('Hook not found')
+    }
+    const events = await convex.query(api.events.getEventsForHook, { 
+      hookId: hookIdTyped,
+      limit: 50
+    })
+    return { hook, events: events as Doc<'events'>[] }
+  })

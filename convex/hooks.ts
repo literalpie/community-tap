@@ -1,74 +1,88 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 
-// Queries
-
 export const listByUser = query({
-  args: { userDid: v.string() },
+  args: { userId: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("hooks")
-      .withIndex("by_userDid", (q) => q.eq("userDid", args.userDid))
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .order("desc")
       .collect();
   },
 });
 
-export const getByUri = query({
-  args: { pdsUri: v.string() },
+export const getById = query({
+  args: { id: v.id("hooks") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
+export const getByRecordUri = query({
+  args: { recordUri: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("hooks")
-      .withIndex("by_pdsUri", (q) => q.eq("pdsUri", args.pdsUri))
+      .withIndex("by_recordUri", (q) => q.eq("recordUri", args.recordUri))
       .first();
   },
 });
 
-// Mutations
-
 export const upsert = mutation({
   args: {
-    userDid: v.string(),
+    userId: v.string(),
     nsid: v.string(),
     webhookUrl: v.string(),
-    pdsUri: v.string(),
+    recordUri: v.string(),
+    isActive: v.optional(v.boolean()),
     createdAt: v.optional(v.number()),
-    enabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("hooks")
-      .withIndex("by_pdsUri", (q) => q.eq("pdsUri", args.pdsUri))
+      .withIndex("by_recordUri", (q) => q.eq("recordUri", args.recordUri))
       .first();
 
     if (existing) {
       await ctx.db.patch(existing._id, {
-        userDid: args.userDid,
+        userId: args.userId,
         nsid: args.nsid,
         webhookUrl: args.webhookUrl,
-        createdAt: args.createdAt ?? existing.createdAt,
-        enabled: args.enabled ?? existing.enabled,
+        isActive: args.isActive ?? existing.isActive,
       });
       return existing._id;
     } else {
       return await ctx.db.insert("hooks", {
-        userDid: args.userDid,
+        userId: args.userId,
         nsid: args.nsid,
         webhookUrl: args.webhookUrl,
-        pdsUri: args.pdsUri,
+        recordUri: args.recordUri,
+        isActive: args.isActive ?? true,
         createdAt: args.createdAt ?? Date.now(),
-        enabled: args.enabled ?? true,
       });
     }
   },
 });
 
-export const deleteByUri = mutation({
-  args: { pdsUri: v.string() },
+export const deleteById = mutation({
+  args: { id: v.id("hooks") },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db.get(args.id);
+    if (existing) {
+      await ctx.db.delete(args.id);
+      return true;
+    }
+    return false;
+  },
+});
+
+export const deleteByRecordUri = mutation({
+  args: { recordUri: v.string() },
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("hooks")
-      .withIndex("by_pdsUri", (q) => q.eq("pdsUri", args.pdsUri))
+      .withIndex("by_recordUri", (q) => q.eq("recordUri", args.recordUri))
       .first();
 
     if (existing) {
@@ -76,5 +90,33 @@ export const deleteByUri = mutation({
       return true;
     }
     return false;
+  },
+});
+
+export const setActive = mutation({
+  args: { id: v.id("hooks"), isActive: v.boolean() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, { isActive: args.isActive });
+  },
+});
+
+export const findHooksByNsid = internalQuery({
+  args: { nsid: v.string() },
+  returns: v.array(v.any()),
+  handler: async (ctx, { nsid }) => {
+    return await ctx.db
+      .query("hooks")
+      .withIndex("by_nsid", (q) => q.eq("nsid", nsid))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+  },
+});
+
+export const checkRepoHasHook = internalQuery({
+  args: { repoDid: v.string() },
+  returns: v.boolean(),
+  handler: async (ctx, _args) => {
+    const hooks = await ctx.db.query("hooks").take(1);
+    return hooks.length > 0;
   },
 });

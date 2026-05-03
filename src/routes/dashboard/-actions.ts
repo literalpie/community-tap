@@ -70,7 +70,7 @@ export const createHookOnPDS = createServerFn({ method: 'POST' })
 
     // Check for duplicate in Convex
     const convex = getConvexHttpClient()
-    const existingHooks = await convex.query(api.hooks.listByUser, { userDid: did })
+    const existingHooks = await convex.query(api.hooks.listByUser, { userId: did })
     const duplicate = existingHooks.find((h: any) => h.nsid === data.nsid)
     if (duplicate) {
       throw new Error(
@@ -98,12 +98,12 @@ export const createHookOnPDS = createServerFn({ method: 'POST' })
     // Write to Convex
     try {
       await convex.mutation(api.hooks.upsert, {
-        userDid: did,
+        userId: did,
         nsid: data.nsid,
         webhookUrl: data.webhookUrl,
-        pdsUri: pdsResult.uri,
+        recordUri: pdsResult.uri,
         createdAt: Date.now(),
-        enabled: true,
+        isActive: true,
       })
     } catch (convexErr) {
       // Attempt PDS rollback
@@ -149,7 +149,7 @@ export const deleteHookOnPDS = createServerFn({ method: 'POST' })
     // Delete from Convex
     try {
       const convex = getConvexHttpClient()
-      await convex.mutation(api.hooks.deleteByUri, { pdsUri: data.uri })
+      await convex.mutation(api.hooks.deleteByRecordUri, { recordUri: data.uri })
     } catch (convexErr) {
       console.error('[deleteHook] Convex delete failed:', convexErr)
       // Log warning — sync will clean it up
@@ -169,8 +169,8 @@ export const syncHooksFromPDS = createServerFn({ method: 'POST' }).handler(
     const pdsUris = new Set(matchingRecords.map((r) => r.uri))
 
     // Get Convex records
-    const convexHooks = await convex.query(api.hooks.listByUser, { userDid: did })
-    const convexUris = new Set(convexHooks.map((h: any) => h.pdsUri))
+    const convexHooks = await convex.query(api.hooks.listByUser, { userId: did })
+    const convexUris = new Set(convexHooks.map((h: any) => h.recordUri))
 
     let added = 0
     let removed = 0
@@ -179,12 +179,12 @@ export const syncHooksFromPDS = createServerFn({ method: 'POST' }).handler(
     for (const record of matchingRecords) {
       if (!convexUris.has(record.uri)) {
         await convex.mutation(api.hooks.upsert, {
-          userDid: did,
+          userId: did,
           nsid: record.value.nsid,
           webhookUrl: record.value.webhookUrl,
-          pdsUri: record.uri,
+          recordUri: record.uri,
           createdAt: new Date(record.value.createdAt).getTime() || Date.now(),
-          enabled: true,
+          isActive: true,
         })
         added++
       }
@@ -192,8 +192,8 @@ export const syncHooksFromPDS = createServerFn({ method: 'POST' }).handler(
 
     // In Convex but not PDS → delete
     for (const hook of convexHooks) {
-      if (!pdsUris.has(hook.pdsUri)) {
-        await convex.mutation(api.hooks.deleteByUri, { pdsUri: hook.pdsUri })
+      if (!pdsUris.has(hook.recordUri)) {
+        await convex.mutation(api.hooks.deleteByRecordUri, { recordUri: hook.recordUri })
         removed++
       }
     }
