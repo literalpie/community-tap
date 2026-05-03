@@ -10,15 +10,22 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as OauthLogoutRouteImport } from './routes/oauth/logout'
 import { Route as OauthLoginApiRouteImport } from './routes/oauth/login-api'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
 import { Route as JwksJsonRouteImport } from './routes/jwks.json'
+import { Route as DashboardNewRouteImport } from './routes/dashboard/new'
 import { Route as OauthClientMetadataJsonRouteImport } from './routes/oauth/client-metadata.json'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/dashboard/',
+  path: '/dashboard/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OauthLogoutRoute = OauthLogoutRouteImport.update({
@@ -41,6 +48,11 @@ const JwksJsonRoute = JwksJsonRouteImport.update({
   path: '/jwks/json',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardNewRoute = DashboardNewRouteImport.update({
+  id: '/dashboard/new',
+  path: '/dashboard/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OauthClientMetadataJsonRoute = OauthClientMetadataJsonRouteImport.update({
   id: '/oauth/client-metadata/json',
   path: '/oauth/client-metadata/json',
@@ -49,62 +61,76 @@ const OauthClientMetadataJsonRoute = OauthClientMetadataJsonRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard/new': typeof DashboardNewRoute
   '/jwks/json': typeof JwksJsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/login-api': typeof OauthLoginApiRoute
   '/oauth/logout': typeof OauthLogoutRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/oauth/client-metadata/json': typeof OauthClientMetadataJsonRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard/new': typeof DashboardNewRoute
   '/jwks/json': typeof JwksJsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/login-api': typeof OauthLoginApiRoute
   '/oauth/logout': typeof OauthLogoutRoute
+  '/dashboard': typeof DashboardIndexRoute
   '/oauth/client-metadata/json': typeof OauthClientMetadataJsonRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard/new': typeof DashboardNewRoute
   '/jwks/json': typeof JwksJsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/login-api': typeof OauthLoginApiRoute
   '/oauth/logout': typeof OauthLogoutRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/oauth/client-metadata/json': typeof OauthClientMetadataJsonRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/dashboard/new'
     | '/jwks/json'
     | '/oauth/callback'
     | '/oauth/login-api'
     | '/oauth/logout'
+    | '/dashboard/'
     | '/oauth/client-metadata/json'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/dashboard/new'
     | '/jwks/json'
     | '/oauth/callback'
     | '/oauth/login-api'
     | '/oauth/logout'
+    | '/dashboard'
     | '/oauth/client-metadata/json'
   id:
     | '__root__'
     | '/'
+    | '/dashboard/new'
     | '/jwks/json'
     | '/oauth/callback'
     | '/oauth/login-api'
     | '/oauth/logout'
+    | '/dashboard/'
     | '/oauth/client-metadata/json'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardNewRoute: typeof DashboardNewRoute
   JwksJsonRoute: typeof JwksJsonRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
   OauthLoginApiRoute: typeof OauthLoginApiRoute
   OauthLogoutRoute: typeof OauthLogoutRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
   OauthClientMetadataJsonRoute: typeof OauthClientMetadataJsonRoute
 }
 
@@ -115,6 +141,13 @@ declare module '@tanstack/solid-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/dashboard'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oauth/logout': {
@@ -145,6 +178,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof JwksJsonRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/new': {
+      id: '/dashboard/new'
+      path: '/dashboard/new'
+      fullPath: '/dashboard/new'
+      preLoaderRoute: typeof DashboardNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/oauth/client-metadata/json': {
       id: '/oauth/client-metadata/json'
       path: '/oauth/client-metadata/json'
@@ -157,10 +197,12 @@ declare module '@tanstack/solid-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardNewRoute: DashboardNewRoute,
   JwksJsonRoute: JwksJsonRoute,
   OauthCallbackRoute: OauthCallbackRoute,
   OauthLoginApiRoute: OauthLoginApiRoute,
   OauthLogoutRoute: OauthLogoutRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
   OauthClientMetadataJsonRoute: OauthClientMetadataJsonRoute,
 }
 export const routeTree = rootRouteImport

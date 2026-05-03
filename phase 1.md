@@ -8,23 +8,22 @@ Define three tables in `convex/schema.ts`:
 
 ```
 hooks
-  userDid        string   (indexed)
-  nsid           string
-  webhookUrl     string
-  pdsUri         string   (AT-URI, e.g. at://did:plc:xxx/com.communitytap.hook/rkey)
-  pdsCid         string
-  createdAt      number
-  enabled        boolean  (default true — will be used in Phase 3)
+  userDid      string   (indexed)
+  nsid         string
+  webhookUrl   string
+  pdsUri       string   (indexed, unique — AT-URI is the stable identity)
+  createdAt    number
+  enabled      boolean  (default true — used in Phase 3)
 
 users
-  did            string   (indexed, unique)
-  handle         string
-  lastSeen       number
+  did          string   (indexed, unique)
+  handle       string
+  lastSeen     number
 
-events           (stub only — empty for now, Phase 2 fills it)
+events         (stub only — empty for now, Phase 2 fills it)
 ```
 
-Indexes needed on `hooks`: by `userDid`, and a compound `(userDid, nsid)` for duplicate detection.
+Indexes on `hooks`: `by_userDid`, `by_pdsUri` (unique), `by_userDid_nsid` (unique — enforces one webhook per NSID per user at the DB level, not just application level).
 
 ---
 
@@ -54,7 +53,7 @@ Create `lexicons/com/communitytap/hook.json`:
 }
 ```
 
-The `key: "tid"` means the AT Proto server auto-generates a TID rkey — no need to manage keys yourself.
+`key: "tid"` means the AT Proto server auto-generates a TID rkey — no key management needed.
 
 ---
 
@@ -67,18 +66,17 @@ The `key: "tid"` means the AT Proto server auto-generates a TID rkey — no need
 
 **Mutations:**
 
-- `hooks.upsert({ userDid, nsid, webhookUrl, pdsUri, pdsCid })` — insert or update by `pdsUri`; used by both creation flow and sync
+- `hooks.upsert({ userDid, nsid, webhookUrl, pdsUri })` — insert or update by `pdsUri`; used by both creation flow and sync
 - `hooks.deleteByUri(pdsUri)` — delete by AT-URI
-- `hooks.deleteAllForUser(userDid)` — used during full sync reconciliation
 - `users.upsert({ did, handle })` — called on login to keep the users table current
 
-All mutations should validate that the calling user's DID matches `userDid` (i.e. don't trust the client to pass their own DID unchecked — enforce it server-side via the Convex auth context).
+All mutations enforce that the calling user's DID matches `userDid` via the Convex auth context — don't trust the client to pass their own DID unchecked.
 
 ---
 
 ### 4. PDS Interaction Layer
 
-Create a client-side helper module (e.g. `src/lib/pds.ts`) wrapping the AT Proto agent. Three operations:
+Create `src/lib/pds.ts` wrapping the AT Proto agent. Three operations:
 
 **`createHookRecord(agent, { nsid, webhookUrl })`**
 
@@ -96,89 +94,91 @@ Create a client-side helper module (e.g. `src/lib/pds.ts`) wrapping the AT Proto
 **`listHookRecords(agent)`**
 
 - Calls `agent.api.com.atproto.repo.listRecords` with `collection: "com.communitytap.hook"`, `limit: 100`
-- Returns array of `{ uri, cid, value }` — handles pagination if >100 records exist
+- Returns array of `{ uri, value }`
+- Known limitation: assumes <100 hooks per user; acceptable given Phase 3 will enforce a much lower per-user hook cap anyway
 
 ---
 
 ### 5. Hook Creation Flow
 
-The create action is a two-step commit — PDS first, then Convex:
+Two-step commit — PDS first, then Convex:
 
 ```
-1. Validate inputs (NSID format regex: /^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/, URL validity)
-2. Check Convex for duplicate (userDid + nsid) — reject early
+1. Validate inputs client-side:
+     - NSID format: /^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/
+     - Webhook URL: valid URI
+2. Check Convex for duplicate (userDid + nsid) — reject early with
+   "You already have a hook for this NSID. Delete it first to change the webhook URL."
 3. Write to PDS → get back { uri, cid }
 4. Write to Convex via hooks.upsert
-5. On any failure in step 4, attempt PDS rollback (deleteRecord) and surface error
+5. If step 4 fails: attempt PDS rollback (deleteRecord) and surface error to user
+   If rollback also fails: surface error — sync button will recover
 ```
 
-The PDS-first ordering means Convex is always a mirror — the PDS is authoritative. If step 4 fails and rollback also fails, the sync button recovers it.
+PDS-first ordering keeps Convex as a mirror with the PDS as the source of truth.
 
 ---
 
 ### 6. Hook Deletion Flow
 
-Mirror of creation, but PDS delete is attempted first:
+PDS delete first, then Convex:
 
 ```
 1. Call deleteHookRecord(agent, uri)
 2. Call hooks.deleteByUri(uri) in Convex
-3. If PDS delete fails, surface error and don't touch Convex
-4. If Convex delete fails after PDS succeeds, log warning — sync will clean it up
+3. If PDS delete fails: surface error, don't touch Convex
+4. If Convex delete fails after PDS succeeds: log warning — sync will clean it up
 ```
 
 ---
 
 ### 7. Sync-from-PDS Flow
 
-Triggered manually via the "Sync from AT Proto" button:
+Triggered manually via the "Sync from AT Proto" button. Pure set diff — no CID comparison needed since hook records are immutable (NSID and webhook URL cannot be edited; changing either requires delete-and-recreate):
 
 ```
-1. Call listHookRecords(agent) — get all PDS records
-2. Call hooks.listByUser(userDid) from Convex — get current mirror state
-3. Diff:
-   - PDS records not in Convex → upsert into Convex
-   - Convex records not in PDS → delete from Convex
-   - Records in both but CID differs → upsert (record was edited externally)
-4. Show result summary: "Added 2, removed 1, updated 0"
+1. Call listHookRecords(agent) → set of PDS URIs + their values
+2. Call hooks.listByUser(userDid) from Convex → set of Convex URIs
+3. Diff by URI:
+   - In PDS but not Convex → upsert into Convex
+   - In Convex but not PDS → deleteByUri from Convex
+4. Show result summary: "Added 2, removed 1"
 ```
 
-This handles all drift scenarios: external edits via a Bluesky client, failed creates, failed deletes.
+Handles all real drift scenarios: failed creates, failed deletes, external edits made via another client (which manifest as a delete+new URI, caught by the diff).
 
 ---
 
 ### 8. UI
 
-Three views, all within the authenticated shell:
-
 **Dashboard (`/dashboard`)**
 
-- Header row: "Your hooks" + "Add hook" button + "Sync" button with last-sync timestamp
+- Header: "Your hooks" + "Add hook" button + "Sync" button with last-sync timestamp
 - Hook list: table or card list showing NSID, truncated webhook URL, created date, enabled badge
-- Empty state with a prompt to add the first hook
-- Each row has a delete button (with confirm dialog — no undo)
+- Empty state with prompt to add first hook
+- Each row has a delete button with confirm dialog
 
 **New Hook Form (modal or `/dashboard/new`)**
 
 - NSID field with format validation on blur, example placeholder (`app.bsky.feed.post`)
 - Webhook URL field with URL validation
-- Submit button shows loading state during the two-step PDS+Convex write
-- Error states for: duplicate NSID, invalid format, PDS write failure
+- Submit shows loading state during two-step write
+- Error states: duplicate NSID (with specific message above), invalid format, PDS write failure
 
 **Hook Detail (`/dashboard/hooks/:rkey` — optional for Phase 1)**
 
-- Shows full webhook URL (not truncated), NSID, AT-URI, created date
+- Full webhook URL, NSID, AT-URI, created date
 - Delete button
-- In Phase 2 this page gains the event log
+- Gains event log in Phase 2
 
 ---
 
 ### 9. Implementation Order
 
-1. Convex schema + stub mutations/queries (no auth enforcement yet, add that second)
+1. Convex schema + stub mutations/queries
 2. Lexicon file
-3. `pds.ts` helper with `createHookRecord` + `listHookRecords` + `deleteHookRecord`
-4. `users.upsert` call on login so the users table populates from day one
+3. `pds.ts` helper (`createHookRecord`, `listHookRecords`, `deleteHookRecord`)
+4. `users.upsert` call on login
 5. Hook creation: form → PDS → Convex (happy path first, then error handling)
 6. Dashboard list (reads from Convex)
 7. Hook deletion
@@ -190,6 +190,6 @@ Three views, all within the authenticated shell:
 
 ### Key Decision Points to Resolve Before Starting
 
-- **Where does the AT Proto agent live?** It's likely already in a context/store from the OAuth scaffold — confirm the API for getting a ready agent in a SolidJS component vs. a TanStack action.
-- **Convex auth identity:** Confirm the Convex auth is configured to extract the user's DID from the AT Proto JWT so mutations can enforce `ctx.auth.subject === userDid`.
-- **NSID validation strictness:** Decide whether to validate that the NSID is a real, registered lexicon or just syntactically valid. Syntactic-only is fine for Phase 1 — Phase 2 will surface bad NSIDs naturally when Tap finds no events.
+- **AT Proto agent access:** Confirm how to get a ready agent in a SolidJS component vs. a TanStack action — likely already established in the OAuth scaffold.
+- **Convex auth identity:** Confirm Convex auth is configured to extract the user's DID from the AT Proto JWT so mutations can enforce `ctx.auth.subject === userDid`.
+- **NSID validation strictness:** Syntactic validation only for Phase 1. Bad NSIDs will surface naturally in Phase 2 when Tap finds no matching events.

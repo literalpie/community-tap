@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/solid-router'
+import { SCOPE } from '~/auth/client'
 
 const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL || 'http://localhost:3000'
 const PRIVATE_KEY = import.meta.env.PRIVATE_KEY
@@ -16,7 +17,7 @@ export const Route = createFileRoute('/oauth/client-metadata/json')({
               redirect_uris: [`${PUBLIC_URL}/oauth/callback`],
               grant_types: ['authorization_code', 'refresh_token'],
               response_types: ['code'],
-              scope: 'atproto repo:community.tap',
+              scope: SCOPE,
               token_endpoint_auth_method: 'private_key_jwt',
               token_endpoint_auth_signing_alg: 'ES256',
               jwks_uri: `${PUBLIC_URL}/jwks.json`,

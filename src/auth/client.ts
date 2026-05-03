@@ -11,7 +11,7 @@ import { api } from "../../convex/_generated/api";
 
 let _convexClient: ConvexClient | null = null;
 
-function getConvexClient(): ConvexClient {
+export function getConvexClient(): ConvexClient {
   if (!_convexClient) {
     const url = import.meta.env.VITE_CONVEX_URL;
     if (!url) {
@@ -22,7 +22,7 @@ function getConvexClient(): ConvexClient {
   return _convexClient;
 }
 
-export const SCOPE = "atproto repo:community.tap";
+export const SCOPE = "atproto repo:com.communitytap.hook";
 
 const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL || "http://127.0.0.1:3000";
 const PRIVATE_KEY = import.meta.env.PRIVATE_KEY;
@@ -62,34 +62,34 @@ export async function getOAuthClient(): Promise<NodeOAuthClient> {
     clientMetadata: getClientMetadata(),
     keyset: await getKeyset(),
     requestLock: requestLocalLock,
-    stateStore: {
-      set: async (key, state) => {
-        await convex.mutation(api.auth.setState, { key, state });
+      stateStore: {
+        set: async (key, state) => {
+          await convex.mutation(api.auth.setState, { key, state });
+        },
+        get: async (key) => {
+          const result = await convex.query(api.auth.getState, { key });
+          return result ? result.state : undefined;
+        },
+        del: async (key) => {
+          await convex.mutation(api.auth.delState, { key });
+        },
       },
-      get: async (key) => {
-        const result = await convex.query(api.auth.getState, { key });
-        return result ? result.state : undefined;
+      sessionStore: {
+        set: async (sub, sessionData) => {
+          await convex.mutation(api.auth.setSession, {
+            did: sub,
+            session: sessionData,
+          });
+        },
+        get: async (sub) => {
+          const result = await convex.query(api.auth.getSession, {
+            did: sub,
+          });
+          return result ? result.session : undefined;
+        },
+        del: async (sub) => {
+          await convex.mutation(api.auth.delSession, { did: sub });
+        },
       },
-      del: async (key) => {
-        await convex.mutation(api.auth.delState, { key });
-      },
-    },
-    sessionStore: {
-      set: async (sub, sessionData) => {
-        await convex.mutation(api.auth.setSession, {
-          did: sub,
-          session: sessionData,
-        });
-      },
-      get: async (sub) => {
-        const result = await convex.query(api.auth.getSession, {
-          did: sub,
-        });
-        return result ? result.session : undefined;
-      },
-      del: async (sub) => {
-        await convex.mutation(api.auth.delSession, { did: sub });
-      },
-    },
   });
 }

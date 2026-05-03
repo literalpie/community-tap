@@ -49,6 +49,9 @@ function RootComponent() {
               ) : (
                 <a href="/" class="text-sm text-blue-600 hover:underline">Sign in</a>
               )}
+              {data().session && (
+                <a href="/dashboard" class="text-sm text-blue-600 hover:underline">Dashboard</a>
+              )}
             </div>
           </div>
         </header>

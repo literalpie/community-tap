@@ -9,7 +9,9 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as hooks from "../hooks.js";
 import type * as todos from "../todos.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -19,7 +21,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  hooks: typeof hooks;
   todos: typeof todos;
+  users: typeof users;
 }>;
 
 /**

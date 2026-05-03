@@ -1,0 +1,19 @@
+{
+  "lexicon": 1,
+  "id": "com.communitytap.hook",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["nsid", "webhookUrl", "createdAt"],
+        "properties": {
+          "nsid": { "type": "string" },
+          "webhookUrl": { "type": "string", "format": "uri" },
+          "createdAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

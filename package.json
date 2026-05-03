@@ -13,6 +13,7 @@
     "check": "biome check"
   },
   "dependencies": {
+    "@atproto/api": "^0.19.11",
     "@atproto/common-web": "^0.4.21",
     "@atproto/identity": "^0.4.12",
     "@atproto/oauth-client-node": "^0.3.17",
