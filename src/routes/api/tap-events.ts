@@ -31,11 +31,9 @@ export const Route = createFileRoute('/api/tap-events')({
             })
           }
 
-          // Try to parse for richer info, but fall back to raw
-          let event:TapEvent = parseTapEvent(rawEvent)
-
-          // Get collection - parsed event only has it on record events
-          const collection = event?.type === 'record' ? event.collection : rawEvent?.collection
+          // Parse the event - we already filtered for 'record' type above
+          const event = parseTapEvent(rawEvent) as Extract<TapEvent, { type: 'record' }>
+          const collection = event.collection
 
           // Find all hooks and filter by collection
           const allHooks = await convex.query(api.hooks.listAll)
@@ -89,10 +87,10 @@ export const Route = createFileRoute('/api/tap-events')({
                   hookId: hook._id,
                   userId: hook.userId,
                   nsid: hook.nsid,
-                  repo: rawEvent.did,
-                  collection: rawEvent.collection,
-                  rkey: rawEvent.rkey,
-                  action: rawEvent.action,
+                  repo: event.did,
+                  collection: event.collection,
+                  rkey: event.rkey,
+                  action: event.action,
                   webhookUrl: hook.webhookUrl,
                   requestBody: JSON.stringify(rawEvent),
                   responseStatus: result.status,
