@@ -14,6 +14,7 @@ export const Route = createFileRoute('/api/tap-events')({
         })
       },
       POST: async ({ request }) => {
+        console.log('Received Tap event')
         try {
           const rawEvent = await request.json()
           
@@ -42,6 +43,7 @@ export const Route = createFileRoute('/api/tap-events')({
               headers: { 'Content-Type': 'application/json' },
             })
           }
+          console.log(`Matched ${matchingHooks.length} hooks for collection ${collection}`)
 
           // Deliver to each webhook - use RAW event, not parsed
           const deliveries = await Promise.allSettled(
