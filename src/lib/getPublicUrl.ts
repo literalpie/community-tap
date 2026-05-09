@@ -1,6 +1,12 @@
 export const getPublicUrl = () => {
-  if (import.meta.env.VITE_IS_PROD) {
-    return import.meta.env.VITE_URL || "https://localhost:3000";
-  }
-  return import.meta.env.VITE_PUBLIC_URL || "https://localhost:3000";
-};
+  const serverEnv = typeof process !== 'undefined' ? process.env : undefined
+  const url =
+    import.meta.env.VITE_PUBLIC_URL ||
+    import.meta.env.VITE_URL ||
+    serverEnv?.PUBLIC_URL ||
+    serverEnv?.URL ||
+    serverEnv?.DEPLOY_PRIME_URL ||
+    serverEnv?.DEPLOY_URL
+
+  return url?.replace(/\/+$/, '')
+}

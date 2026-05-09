@@ -1,6 +1,3 @@
 [build]
   publish = "dist"
-  command = "pnpm build"
-
-[functions]
-  directory = "dist/functions"
+  command = "VITE_PUBLIC_URL=$DEPLOY_PRIME_URL VITE_URL=$URL pnpm run build"
