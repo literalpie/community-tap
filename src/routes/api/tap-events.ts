@@ -36,6 +36,8 @@ export const Route = createFileRoute('/api/tap-events')({
             event = parseTapEvent(rawEvent)
           } catch (parseErr) {
             console.log('parseTapEvent failed, using raw event:', parseErr?.message)
+            console.log('Raw event keys:', Object.keys(rawEvent))
+            console.log('Raw event sample:', JSON.stringify(rawEvent).slice(0, 500))
             event = null
           }
 
