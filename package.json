@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev --host --port 3000",
-    "build": "tsx scripts/write-jwks.ts && vite build",
+    "build": "vite build && tsx scripts/write-oauth-public-files.ts",
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
     "test": "vitest run",

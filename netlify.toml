@@ -1,18 +1,3 @@
 [build]
   publish = "dist"
   command = "VITE_PUBLIC_URL=$DEPLOY_PRIME_URL VITE_URL=$URL pnpm run build"
-
-[functions]
-  directory = "netlify/functions"
-
-[[redirects]]
-  from = "/oauth/client-metadata.json"
-  to = "/.netlify/functions/oauth-client-metadata"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/jwks.json"
-  to = "/.netlify/functions/jwks"
-  status = 200
-  force = true
