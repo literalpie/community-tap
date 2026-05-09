@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/solid-router'
 import { SCOPE } from '~/auth/client'
+import { getPublicUrl } from '~/lib/getPublicUrl';
 
-const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL || 'http://localhost:3000'
+const PUBLIC_URL = getPublicUrl();
 const PRIVATE_KEY = import.meta.env.PRIVATE_KEY
 
 export const Route = createFileRoute('/oauth/client-metadata/json')({
