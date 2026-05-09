@@ -1,3 +1,6 @@
 [build]
   publish = "dist"
   command = "VITE_PUBLIC_URL=$DEPLOY_PRIME_URL VITE_URL=$URL pnpm run build"
+
+[functions]
+  directory = "netlify/functions"

@@ -1,3 +1,2 @@
-# Exclude OAuth and JWKS from SPA fallback
-/oauth/*    200!
-/jwks.json  200!
+/oauth/client-metadata.json /.netlify/functions/oauth-client-metadata 200!
+/jwks.json /.netlify/functions/jwks 200!
