@@ -72,7 +72,7 @@ export const Route = createFileRoute('/api/tap-events')({
                   },
                   body: JSON.stringify(rawEvent), // Raw event to user
                 })
-
+                console.log(`Delivered to ${hook.webhookUrl} with status ${response.status}`)
                 const duration = Date.now() - startTime
                 return { 
                   hookId: hook._id, 
@@ -81,6 +81,7 @@ export const Route = createFileRoute('/api/tap-events')({
                   duration,
                 }
               } catch (error) {
+                console.log('Error delivering to webhook:', error)
                 const duration = Date.now() - startTime
                 return { 
                   hookId: hook._id, 
