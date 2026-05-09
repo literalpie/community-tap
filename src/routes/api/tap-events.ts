@@ -9,6 +9,7 @@ export const Route = createFileRoute('/api/tap-events')({
   server: {
     handlers: {
       GET: async () => {
+        console.log('get');
         return new Response(JSON.stringify({ status: 'ok' }), {
           headers: { 'Content-Type': 'application/json' },
         })
