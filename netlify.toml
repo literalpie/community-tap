@@ -4,3 +4,15 @@
 
 [functions]
   directory = "netlify/functions"
+
+[[redirects]]
+  from = "/oauth/client-metadata.json"
+  to = "/.netlify/functions/oauth-client-metadata"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/jwks.json"
+  to = "/.netlify/functions/jwks"
+  status = 200
+  force = true
