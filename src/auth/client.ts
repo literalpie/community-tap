@@ -26,9 +26,10 @@ export function getConvexClient(): ConvexClient {
 export const SCOPE = "atproto repo:com.communitytap.hook";
 
 const PUBLIC_URL = getPublicUrl();
-const PRIVATE_KEY = import.meta.env.PRIVATE_KEY;
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 function getClientMetadata(): OAuthClientMetadataInput {
+  console.log('has url', !!PUBLIC_URL, 'has key', !!PRIVATE_KEY)
   if (PUBLIC_URL && PRIVATE_KEY) {
     return {
       client_id: `${PUBLIC_URL}/oauth/client-metadata.json`,
