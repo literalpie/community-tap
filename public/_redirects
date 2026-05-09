@@ -1,0 +1,3 @@
+# Exclude OAuth and JWKS from SPA fallback
+/oauth/*    200!
+/jwks.json  200!
