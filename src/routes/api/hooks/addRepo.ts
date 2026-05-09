@@ -7,7 +7,7 @@ const convex = new ConvexHttpClient(process.env.VITE_CONVEX_URL!)
 
 // Real Tap client - needs Node.js, so we import dynamically in the handler
 async function getTapClient() {
-  const tapUrl = process.env.TAP_BASE_URL || 'http://localhost:2480'
+  const tapUrl = import.meta.env.VITE_TAP_BASE_URL || 'http://localhost:2480'
   const tapPassword = process.env.TAP_ADMIN_PASSWORD
   return new Tap(tapUrl, { adminPassword: tapPassword })
 }
