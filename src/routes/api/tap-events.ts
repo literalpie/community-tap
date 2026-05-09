@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/solid-router'
-import { parseTapEvent, type TapEvent } from '@atproto/tap'
+import { parseTapEvent, assureAdminAuth, type TapEvent } from '@atproto/tap'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
@@ -17,6 +17,21 @@ export const Route = createFileRoute('/api/tap-events')({
       },
       POST: async ({ request }) => {
         console.log('Received Tap event')
+
+        // Verify admin auth
+        const tapPassword = process.env.TAP_ADMIN_PASSWORD
+        if (tapPassword) {
+          try {
+            assureAdminAuth(tapPassword, request.headers.get('authorization') ?? '')
+          } catch {
+            console.log('Unauthorized request to /api/tap-events')
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+              status: 401,
+              headers: { 'Content-Type': 'application/json' },
+            })
+          }
+        }
+
         try {
           const rawEvent = await request.json()
           
