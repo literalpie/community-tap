@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/solid-router'
 import { parseTapEvent, type TapEvent } from '@atproto/tap'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '../../../convex/_generated/api'
+import type { Doc, Id } from '../../../convex/_generated/dataModel'
 
 const convex = new ConvexHttpClient(process.env.VITE_CONVEX_URL!)
 
@@ -31,22 +32,14 @@ export const Route = createFileRoute('/api/tap-events')({
           }
 
           // Try to parse for richer info, but fall back to raw
-          let event:TapEvent | null = null
-          try {
-            event = parseTapEvent(rawEvent)
-          } catch (parseErr) {
-            console.log('parseTapEvent failed, using raw event:', parseErr?.message)
-            console.log('Raw event keys:', Object.keys(rawEvent))
-            console.log('Raw event sample:', JSON.stringify(rawEvent).slice(0, 500))
-            event = null
-          }
+          let event:TapEvent = parseTapEvent(rawEvent)
 
           // Get collection - parsed event only has it on record events
           const collection = event?.type === 'record' ? event.collection : rawEvent?.collection
 
           // Find all hooks and filter by collection
           const allHooks = await convex.query(api.hooks.listAll)
-          const matchingHooks = (allHooks as any[]).filter(h => 
+          const matchingHooks = allHooks.filter(h => 
             h.nsid === collection && h.isActive
           )
 
@@ -60,8 +53,10 @@ export const Route = createFileRoute('/api/tap-events')({
 
           // Deliver to each webhook - use RAW event, not parsed
           const deliveries = await Promise.allSettled(
-            matchingHooks.map(async (hook: any) => {
+            matchingHooks.map(async (hook: Doc<'hooks'>) => {
               const startTime = Date.now()
+              let result: { hookId: Id<'hooks'>; success: boolean; status?: number; error?: string; duration: number }
+
               try {
                 const response = await fetch(hook.webhookUrl, {
                   method: 'POST',
@@ -72,24 +67,44 @@ export const Route = createFileRoute('/api/tap-events')({
                   },
                   body: JSON.stringify(rawEvent), // Raw event to user
                 })
-                console.log(`Delivered to ${hook.webhookUrl} with status ${response.status}`)
                 const duration = Date.now() - startTime
-                return { 
-                  hookId: hook._id, 
+                result = {
+                  hookId: hook._id,
                   success: response.ok,
                   status: response.status,
                   duration,
                 }
               } catch (error) {
-                console.log('Error delivering to webhook:', error)
                 const duration = Date.now() - startTime
-                return { 
-                  hookId: hook._id, 
+                result = {
+                  hookId: hook._id,
                   success: false,
                   error: error instanceof Error ? error.message : 'Unknown error',
                   duration,
                 }
               }
+
+              try {
+                await convex.mutation(api.events.logEvent, {
+                  hookId: hook._id,
+                  userId: hook.userId,
+                  nsid: hook.nsid,
+                  repo: rawEvent.did,
+                  collection: rawEvent.collection,
+                  rkey: rawEvent.rkey,
+                  action: rawEvent.action,
+                  webhookUrl: hook.webhookUrl,
+                  requestBody: JSON.stringify(rawEvent),
+                  responseStatus: result.status,
+                  durationMs: result.duration,
+                  success: result.success,
+                  error: result.error,
+                })
+              } catch (logErr) {
+                console.error('Failed to log event to Convex:', logErr)
+              }
+
+              return result
             }),
           )
 
