@@ -82,22 +82,24 @@ export const Route = createFileRoute('/api/tap-events')({
                 }
               }
 
+              const logPayload = {
+                hookId: hook._id,
+                userId: hook.userId,
+                nsid: hook.nsid,
+                repo: event.did,
+                collection: event.collection,
+                rkey: event.rkey,
+                action: event.action,
+                webhookUrl: hook.webhookUrl,
+                requestBody: JSON.stringify(rawEvent),
+                responseStatus: result.status,
+                durationMs: result.duration,
+                success: result.success,
+                error: result.error,
+              }
+              console.log('Logging to Convex:', JSON.stringify(logPayload).slice(0, 500))
               try {
-                await convex.mutation(api.events.logEvent, {
-                  hookId: hook._id,
-                  userId: hook.userId,
-                  nsid: hook.nsid,
-                  repo: event.did,
-                  collection: event.collection,
-                  rkey: event.rkey,
-                  action: event.action,
-                  webhookUrl: hook.webhookUrl,
-                  requestBody: JSON.stringify(rawEvent),
-                  responseStatus: result.status,
-                  durationMs: result.duration,
-                  success: result.success,
-                  error: result.error,
-                })
+                await convex.mutation(api.events.logEvent, logPayload)
               } catch (logErr) {
                 console.error('Failed to log event to Convex:', logErr)
               }
