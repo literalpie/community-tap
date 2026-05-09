@@ -5,7 +5,7 @@ import { getPublicUrl } from '~/lib/getPublicUrl';
 const PUBLIC_URL = getPublicUrl();
 const PRIVATE_KEY = import.meta.env.PRIVATE_KEY
 
-export const Route = createFileRoute('/oauth/client-metadata/json')({
+export const Route = createFileRoute('/oauth/client-metadata.json')({
   server: {
     handlers: {
       GET: async () => {
