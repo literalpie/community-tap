@@ -1,0 +1,13 @@
+{
+  "client_id": "https://community-tap.netlify.app/oauth/client-metadata.json",
+  "client_name": "Community Tap",
+  "client_uri": "https://community-tap.netlify.app",
+  "redirect_uris": ["https://community-tap.netlify.app/oauth/callback"],
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "scope": "atproto repo:com.communitytap.hook",
+  "token_endpoint_auth_method": "private_key_jwt",
+  "token_endpoint_auth_signing_alg": "ES256",
+  "jwks_uri": "https://community-tap.netlify.app/jwks.json",
+  "dpop_bound_access_tokens": true
+}
