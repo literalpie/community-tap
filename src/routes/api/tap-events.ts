@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/solid-router'
-import { parseTapEvent } from '@atproto/tap'
+import { parseTapEvent, type TapEvent } from '@atproto/tap'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '../../../convex/_generated/api'
 
@@ -19,18 +19,28 @@ export const Route = createFileRoute('/api/tap-events')({
         try {
           const rawEvent = await request.json()
           
-          // Parse with the real type for our internal use
-          const event = parseTapEvent(rawEvent)
-
+          // Get event type from raw event first
+          const eventType = rawEvent?.type
+          
           // Only process 'record' events
-          if (!event || event.type !== 'record') {
-            return new Response(JSON.stringify({ ignored: true, type: event?.type }), {
+          if (eventType !== 'record') {
+            return new Response(JSON.stringify({ ignored: true, type: eventType }), {
               status: 200,
               headers: { 'Content-Type': 'application/json' },
             })
           }
 
-          const collection = event.collection
+          // Try to parse for richer info, but fall back to raw
+          let event:TapEvent | null = null
+          try {
+            event = parseTapEvent(rawEvent)
+          } catch (parseErr) {
+            console.log('parseTapEvent failed, using raw event:', parseErr?.message)
+            event = null
+          }
+
+          // Get collection - parsed event only has it on record events
+          const collection = event?.type === 'record' ? event.collection : rawEvent?.collection
 
           // Find all hooks and filter by collection
           const allHooks = await convex.query(api.hooks.listAll)
