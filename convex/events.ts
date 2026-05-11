@@ -1,7 +1,7 @@
-import { query, internalMutation } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
-export const logEvent = internalMutation({
+export const logEvent = mutation({
   args: {
     hookId: v.id("hooks"),
     userId: v.string(),

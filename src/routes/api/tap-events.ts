@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/solid-router'
-import { parseTapEvent } from '@atproto/tap'
+import { parseTapEvent, assureAdminAuth, type TapEvent } from '@atproto/tap'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '../../../convex/_generated/api'
+import type { Doc, Id } from '../../../convex/_generated/dataModel'
 
 const convex = new ConvexHttpClient(process.env.VITE_CONVEX_URL!)
 
@@ -9,30 +10,49 @@ export const Route = createFileRoute('/api/tap-events')({
   server: {
     handlers: {
       GET: async () => {
+        console.log('get');
         return new Response(JSON.stringify({ status: 'ok' }), {
           headers: { 'Content-Type': 'application/json' },
         })
       },
       POST: async ({ request }) => {
+        console.log('Received Tap event')
+
+        // Verify admin auth
+        const tapPassword = process.env.TAP_ADMIN_PASSWORD
+        if (tapPassword) {
+          try {
+            assureAdminAuth(tapPassword, request.headers.get('authorization') ?? '')
+          } catch {
+            console.log('Unauthorized request to /api/tap-events')
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+              status: 401,
+              headers: { 'Content-Type': 'application/json' },
+            })
+          }
+        }
+
         try {
           const rawEvent = await request.json()
           
-          // Parse with the real type for our internal use
-          const event = parseTapEvent(rawEvent)
-
+          // Get event type from raw event first
+          const eventType = rawEvent?.type
+          
           // Only process 'record' events
-          if (!event || event.type !== 'record') {
-            return new Response(JSON.stringify({ ignored: true, type: event?.type }), {
+          if (eventType !== 'record') {
+            return new Response(JSON.stringify({ ignored: true, type: eventType }), {
               status: 200,
               headers: { 'Content-Type': 'application/json' },
             })
           }
 
+          // Parse the event - we already filtered for 'record' type above
+          const event = parseTapEvent(rawEvent) as Extract<TapEvent, { type: 'record' }>
           const collection = event.collection
 
           // Find all hooks and filter by collection
           const allHooks = await convex.query(api.hooks.listAll)
-          const matchingHooks = (allHooks as any[]).filter(h => 
+          const matchingHooks = allHooks.filter(h => 
             h.nsid === collection && h.isActive
           )
 
@@ -42,11 +62,14 @@ export const Route = createFileRoute('/api/tap-events')({
               headers: { 'Content-Type': 'application/json' },
             })
           }
+          console.log(`Matched ${matchingHooks.length} hooks for collection ${collection}`)
 
           // Deliver to each webhook - use RAW event, not parsed
           const deliveries = await Promise.allSettled(
-            matchingHooks.map(async (hook: any) => {
+            matchingHooks.map(async (hook: Doc<'hooks'>) => {
               const startTime = Date.now()
+              let result: { hookId: Id<'hooks'>; success: boolean; status?: number; error?: string; duration: number }
+
               try {
                 const response = await fetch(hook.webhookUrl, {
                   method: 'POST',
@@ -57,23 +80,46 @@ export const Route = createFileRoute('/api/tap-events')({
                   },
                   body: JSON.stringify(rawEvent), // Raw event to user
                 })
-
                 const duration = Date.now() - startTime
-                return { 
-                  hookId: hook._id, 
+                result = {
+                  hookId: hook._id,
                   success: response.ok,
                   status: response.status,
                   duration,
                 }
               } catch (error) {
                 const duration = Date.now() - startTime
-                return { 
-                  hookId: hook._id, 
+                result = {
+                  hookId: hook._id,
                   success: false,
                   error: error instanceof Error ? error.message : 'Unknown error',
                   duration,
                 }
               }
+
+              const logPayload = {
+                hookId: hook._id,
+                userId: hook.userId,
+                nsid: hook.nsid,
+                repo: event.did,
+                collection: event.collection,
+                rkey: event.rkey,
+                action: event.action,
+                webhookUrl: hook.webhookUrl,
+                requestBody: JSON.stringify(rawEvent),
+                responseStatus: result.status,
+                durationMs: result.duration,
+                success: result.success,
+                error: result.error,
+              }
+              console.log('Logging to Convex:', JSON.stringify(logPayload).slice(0, 500))
+              try {
+                await convex.mutation(api.events.logEvent, logPayload)
+              } catch (logErr) {
+                console.error('Failed to log event to Convex:', logErr)
+              }
+
+              return result
             }),
           )
 

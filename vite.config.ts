@@ -11,7 +11,7 @@ export default defineConfig({
   resolve: { tsconfigPaths: true },
   plugins: [
     devtools(),
-    nitro(),
+    nitro({ preset: "netlify" }),
     tailwindcss(),
     tanstackStart(),
     solidPlugin({ ssr: true }),

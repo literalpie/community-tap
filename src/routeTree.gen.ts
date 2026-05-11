@@ -14,10 +14,8 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as OauthLogoutRouteImport } from './routes/oauth/logout'
 import { Route as OauthLoginApiRouteImport } from './routes/oauth/login-api'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
-import { Route as JwksJsonRouteImport } from './routes/jwks.json'
 import { Route as DashboardNewRouteImport } from './routes/dashboard/new'
 import { Route as ApiTapEventsRouteImport } from './routes/api/tap-events'
-import { Route as OauthClientMetadataJsonRouteImport } from './routes/oauth/client-metadata.json'
 import { Route as DashboardHooksHookIdRouteImport } from './routes/dashboard/hooks/$hookId'
 import { Route as ApiHooksAddRepoRouteImport } from './routes/api/hooks/addRepo'
 
@@ -46,11 +44,6 @@ const OauthCallbackRoute = OauthCallbackRouteImport.update({
   path: '/oauth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const JwksJsonRoute = JwksJsonRouteImport.update({
-  id: '/jwks/json',
-  path: '/jwks/json',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DashboardNewRoute = DashboardNewRouteImport.update({
   id: '/dashboard/new',
   path: '/dashboard/new',
@@ -59,11 +52,6 @@ const DashboardNewRoute = DashboardNewRouteImport.update({
 const ApiTapEventsRoute = ApiTapEventsRouteImport.update({
   id: '/api/tap-events',
   path: '/api/tap-events',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OauthClientMetadataJsonRoute = OauthClientMetadataJsonRouteImport.update({
-  id: '/oauth/client-metadata/json',
-  path: '/oauth/client-metadata/json',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardHooksHookIdRoute = DashboardHooksHookIdRouteImport.update({
@@ -81,41 +69,35 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/tap-events': typeof ApiTapEventsRoute
   '/dashboard/new': typeof DashboardNewRoute
-  '/jwks/json': typeof JwksJsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/login-api': typeof OauthLoginApiRoute
   '/oauth/logout': typeof OauthLogoutRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/hooks/addRepo': typeof ApiHooksAddRepoRoute
   '/dashboard/hooks/$hookId': typeof DashboardHooksHookIdRoute
-  '/oauth/client-metadata/json': typeof OauthClientMetadataJsonRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/tap-events': typeof ApiTapEventsRoute
   '/dashboard/new': typeof DashboardNewRoute
-  '/jwks/json': typeof JwksJsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/login-api': typeof OauthLoginApiRoute
   '/oauth/logout': typeof OauthLogoutRoute
   '/dashboard': typeof DashboardIndexRoute
   '/api/hooks/addRepo': typeof ApiHooksAddRepoRoute
   '/dashboard/hooks/$hookId': typeof DashboardHooksHookIdRoute
-  '/oauth/client-metadata/json': typeof OauthClientMetadataJsonRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/api/tap-events': typeof ApiTapEventsRoute
   '/dashboard/new': typeof DashboardNewRoute
-  '/jwks/json': typeof JwksJsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/login-api': typeof OauthLoginApiRoute
   '/oauth/logout': typeof OauthLogoutRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/hooks/addRepo': typeof ApiHooksAddRepoRoute
   '/dashboard/hooks/$hookId': typeof DashboardHooksHookIdRoute
-  '/oauth/client-metadata/json': typeof OauthClientMetadataJsonRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -123,54 +105,46 @@ export interface FileRouteTypes {
     | '/'
     | '/api/tap-events'
     | '/dashboard/new'
-    | '/jwks/json'
     | '/oauth/callback'
     | '/oauth/login-api'
     | '/oauth/logout'
     | '/dashboard/'
     | '/api/hooks/addRepo'
     | '/dashboard/hooks/$hookId'
-    | '/oauth/client-metadata/json'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/api/tap-events'
     | '/dashboard/new'
-    | '/jwks/json'
     | '/oauth/callback'
     | '/oauth/login-api'
     | '/oauth/logout'
     | '/dashboard'
     | '/api/hooks/addRepo'
     | '/dashboard/hooks/$hookId'
-    | '/oauth/client-metadata/json'
   id:
     | '__root__'
     | '/'
     | '/api/tap-events'
     | '/dashboard/new'
-    | '/jwks/json'
     | '/oauth/callback'
     | '/oauth/login-api'
     | '/oauth/logout'
     | '/dashboard/'
     | '/api/hooks/addRepo'
     | '/dashboard/hooks/$hookId'
-    | '/oauth/client-metadata/json'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiTapEventsRoute: typeof ApiTapEventsRoute
   DashboardNewRoute: typeof DashboardNewRoute
-  JwksJsonRoute: typeof JwksJsonRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
   OauthLoginApiRoute: typeof OauthLoginApiRoute
   OauthLogoutRoute: typeof OauthLogoutRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   ApiHooksAddRepoRoute: typeof ApiHooksAddRepoRoute
   DashboardHooksHookIdRoute: typeof DashboardHooksHookIdRoute
-  OauthClientMetadataJsonRoute: typeof OauthClientMetadataJsonRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -210,13 +184,6 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof OauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/jwks/json': {
-      id: '/jwks/json'
-      path: '/jwks/json'
-      fullPath: '/jwks/json'
-      preLoaderRoute: typeof JwksJsonRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard/new': {
       id: '/dashboard/new'
       path: '/dashboard/new'
@@ -229,13 +196,6 @@ declare module '@tanstack/solid-router' {
       path: '/api/tap-events'
       fullPath: '/api/tap-events'
       preLoaderRoute: typeof ApiTapEventsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/oauth/client-metadata/json': {
-      id: '/oauth/client-metadata/json'
-      path: '/oauth/client-metadata/json'
-      fullPath: '/oauth/client-metadata/json'
-      preLoaderRoute: typeof OauthClientMetadataJsonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/hooks/$hookId': {
@@ -259,14 +219,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiTapEventsRoute: ApiTapEventsRoute,
   DashboardNewRoute: DashboardNewRoute,
-  JwksJsonRoute: JwksJsonRoute,
   OauthCallbackRoute: OauthCallbackRoute,
   OauthLoginApiRoute: OauthLoginApiRoute,
   OauthLogoutRoute: OauthLogoutRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   ApiHooksAddRepoRoute: ApiHooksAddRepoRoute,
   DashboardHooksHookIdRoute: DashboardHooksHookIdRoute,
-  OauthClientMetadataJsonRoute: OauthClientMetadataJsonRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

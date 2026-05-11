@@ -8,6 +8,7 @@ import {
 } from "@atproto/oauth-client-node";
 import { ConvexClient } from "convex/browser";
 import { api } from "../../convex/_generated/api";
+import { getPublicUrl } from "~/lib/getPublicUrl";
 
 let _convexClient: ConvexClient | null = null;
 
@@ -24,10 +25,11 @@ export function getConvexClient(): ConvexClient {
 
 export const SCOPE = "atproto repo:com.communitytap.hook";
 
-const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL || "http://127.0.0.1:3000";
-const PRIVATE_KEY = import.meta.env.PRIVATE_KEY;
+const PUBLIC_URL = getPublicUrl();
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 function getClientMetadata(): OAuthClientMetadataInput {
+  console.log('has url', !!PUBLIC_URL, 'has key', !!PRIVATE_KEY)
   if (PUBLIC_URL && PRIVATE_KEY) {
     return {
       client_id: `${PUBLIC_URL}/oauth/client-metadata.json`,
