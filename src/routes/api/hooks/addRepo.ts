@@ -41,7 +41,9 @@ export const Route = createFileRoute('/api/hooks/addRepo')({
 
           // Call Tap to register the repo
           try {
+            console.log('getting client')
             const tap = await getTapClient()
+            console.log('got client')
             await tap.addRepos([repoDid])
             console.log('Added repo to Tap:', repoDid)
           } catch (tapError) {
