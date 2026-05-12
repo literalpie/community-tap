@@ -9,7 +9,7 @@ const convex = new ConvexHttpClient(process.env.VITE_CONVEX_URL!)
 async function getTapClient() {
   const tapUrl = import.meta.env.VITE_TAP_BASE_URL || 'http://localhost:2480'
   const tapPassword = process.env.TAP_ADMIN_PASSWORD
-  console.log('has password? ', tapPassword)
+  console.log('has password? ', tapPassword?.length)
   return new Tap(tapUrl, { adminPassword: tapPassword })
 }
 
