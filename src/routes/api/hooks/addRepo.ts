@@ -1,51 +1,19 @@
 import { createFileRoute } from '@tanstack/solid-router'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '../../../../convex/_generated/api';
+import { Tap } from '@atproto/tap';
 
 const convex = new ConvexHttpClient(process.env.VITE_CONVEX_URL!)
 
-async function addRepoToTap(repoDid: string) {
+async function getTapClient() {
   const tapUrl = import.meta.env.VITE_TAP_BASE_URL || 'http://localhost:2480'
   const tapPassword = process.env.TAP_ADMIN_PASSWORD
+  return new Tap(tapUrl, { adminPassword: tapPassword })
+}
 
-  if (!tapPassword) {
-    throw new Error('TAP_ADMIN_PASSWORD not set')
-  }
-
-  const authHeader = 'Basic ' + Buffer.from(`admin:${tapPassword}`).toString('base64')
-  const addReposUrl = new URL('/repos/add', tapUrl).toString()
-
-  // Railway edge may redirect POST -> GET, so handle manually
-  const response = await fetch(addReposUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': authHeader,
-    },
-    body: JSON.stringify({ dids: [repoDid] }),
-    redirect: 'manual',
-  })
-
-  if (response.status >= 300 && response.status < 400) {
-    const location = response.headers.get('location')
-    console.log('Tap redirect:', response.status, '->', location)
-    if (location) {
-      const redirectUrl = new URL(location, addReposUrl).toString()
-      const followResponse = await fetch(redirectUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authHeader,
-        },
-        body: JSON.stringify({ dids: [repoDid] }),
-      })
-      if (!followResponse.ok) {
-        throw new Error(`Failed to add repos: ${followResponse.statusText}`)
-      }
-    }
-  } else if (!response.ok) {
-    throw new Error(`Failed to add repos: ${response.statusText}`)
-  }
+async function addRepoToTap(repoDid: string) {
+  const tap = await getTapClient()
+  await tap.addRepos([repoDid])
 }
 
 export const Route = createFileRoute('/api/hooks/addRepo')({
