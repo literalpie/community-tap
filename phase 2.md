@@ -88,9 +88,10 @@ curl -X POST http://localhost:3000/api/tap-events \
   -H "Content-Type: application/json" \
   -d '{"type":"record","record":{"collection":"app.bsky.feed.post","did":"did:plc:abc","rkey":"123","action":"create","record":{"text":"hello"}}}'
 
-# Test addRepo endpoint
+# Test addRepo endpoint (with optional ADD_REPO_SECRET)
 curl -X POST http://localhost:3000/api/hooks/addRepo \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-secret" \
   -d '{"repoDid": "did:plc:abc"}'
 ```
 

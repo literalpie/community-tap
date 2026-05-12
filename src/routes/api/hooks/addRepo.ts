@@ -1,22 +1,70 @@
 import { createFileRoute } from '@tanstack/solid-router'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '../../../../convex/_generated/api';
-import { Tap } from '@atproto/tap';
 
 const convex = new ConvexHttpClient(process.env.VITE_CONVEX_URL!)
 
-// Real Tap client - needs Node.js, so we import dynamically in the handler
-async function getTapClient() {
-  const tapUrl = import.meta.env.VITE_TAP_BASE_URL || 'http://localhost:2480'
+async function addRepoToTap(repoDid: string) {
+  const tapUrl = process.env.TAP_BASE_URL || 'http://localhost:2480'
   const tapPassword = process.env.TAP_ADMIN_PASSWORD
-  console.log('has password? ', tapPassword?.length)
-  return new Tap(tapUrl, { adminPassword: tapPassword })
+
+  if (!tapPassword) {
+    throw new Error('TAP_ADMIN_PASSWORD not set')
+  }
+
+  const authHeader = 'Basic ' + Buffer.from(`admin:${tapPassword}`).toString('base64')
+  const addReposUrl = new URL('/repos/add', tapUrl).toString()
+
+  // Railway edge may redirect POST -> GET, so handle manually
+  const response = await fetch(addReposUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': authHeader,
+    },
+    body: JSON.stringify({ dids: [repoDid] }),
+    redirect: 'manual',
+  })
+
+  if (response.status >= 300 && response.status < 400) {
+    const location = response.headers.get('location')
+    console.log('Tap redirect:', response.status, '->', location)
+    if (location) {
+      const redirectUrl = new URL(location, addReposUrl).toString()
+      const followResponse = await fetch(redirectUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authHeader,
+        },
+        body: JSON.stringify({ dids: [repoDid] }),
+      })
+      if (!followResponse.ok) {
+        throw new Error(`Failed to add repos: ${followResponse.statusText}`)
+      }
+    }
+  } else if (!response.ok) {
+    throw new Error(`Failed to add repos: ${response.statusText}`)
+  }
 }
 
 export const Route = createFileRoute('/api/hooks/addRepo')({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Verify shared secret for machine-to-machine auth
+        const addRepoSecret = process.env.ADD_REPO_SECRET
+        if (addRepoSecret) {
+          const authHeader = request.headers.get('authorization') ?? ''
+          const expected = `Bearer ${addRepoSecret}`
+          if (authHeader !== expected) {
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+              status: 401,
+              headers: { 'Content-Type': 'application/json' },
+            })
+          }
+        }
+
         try {
           const body = await request.json()
           const { repoDid, registeredBy } = body
@@ -41,10 +89,7 @@ export const Route = createFileRoute('/api/hooks/addRepo')({
 
           // Call Tap to register the repo
           try {
-            console.log('getting client')
-            const tap = await getTapClient()
-            console.log('got client')
-            await tap.addRepos([repoDid])
+            await addRepoToTap(repoDid)
             console.log('Added repo to Tap:', repoDid)
           } catch (tapError) {
             console.error('Tap error:', tapError)
