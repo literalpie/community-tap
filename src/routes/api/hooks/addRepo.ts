@@ -5,7 +5,7 @@ import { api } from '../../../../convex/_generated/api';
 const convex = new ConvexHttpClient(process.env.VITE_CONVEX_URL!)
 
 async function addRepoToTap(repoDid: string) {
-  const tapUrl = process.env.TAP_BASE_URL || 'http://localhost:2480'
+  const tapUrl = import.meta.env.VITE_TAP_BASE_URL || 'http://localhost:2480'
   const tapPassword = process.env.TAP_ADMIN_PASSWORD
 
   if (!tapPassword) {
