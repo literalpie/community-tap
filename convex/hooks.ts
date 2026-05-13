@@ -26,16 +26,6 @@ export const getById = query({
   },
 });
 
-export const getByRecordUri = query({
-  args: { recordUri: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("hooks")
-      .withIndex("by_recordUri", (q) => q.eq("recordUri", args.recordUri))
-      .first();
-  },
-});
-
 export const upsert = mutation({
   args: {
     userId: v.string(),
@@ -72,18 +62,6 @@ export const upsert = mutation({
   },
 });
 
-export const deleteById = mutation({
-  args: { id: v.id("hooks") },
-  handler: async (ctx, args) => {
-    const existing = await ctx.db.get(args.id);
-    if (existing) {
-      await ctx.db.delete(args.id);
-      return true;
-    }
-    return false;
-  },
-});
-
 export const deleteByRecordUri = mutation({
   args: { recordUri: v.string() },
   handler: async (ctx, args) => {
@@ -97,33 +75,5 @@ export const deleteByRecordUri = mutation({
       return true;
     }
     return false;
-  },
-});
-
-export const setActive = mutation({
-  args: { id: v.id("hooks"), isActive: v.boolean() },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, { isActive: args.isActive });
-  },
-});
-
-export const findHooksByNsid = internalQuery({
-  args: { nsid: v.string() },
-  returns: v.array(v.any()),
-  handler: async (ctx, { nsid }) => {
-    return await ctx.db
-      .query("hooks")
-      .withIndex("by_nsid", (q) => q.eq("nsid", nsid))
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .collect();
-  },
-});
-
-export const checkRepoHasHook = internalQuery({
-  args: { repoDid: v.string() },
-  returns: v.boolean(),
-  handler: async (ctx, _args) => {
-    const hooks = await ctx.db.query("hooks").take(1);
-    return hooks.length > 0;
   },
 });

@@ -23,7 +23,7 @@ Key things to understand:
 
 Community Tap is a multi-tenant managed Tap service. Instead of every AT Proto developer running their own Tap instance, they register their lexicon NSID and a webhook URL with Community Tap, and events are delivered to them automatically. One shared Tap instance serves all users. The key design points an agent needs to internalize:
 
-- Tap → Convex httpAction → per-user webhooks is the delivery chain
+- Tap → TanStack Start API route → Convex storage/mutations → per-user webhooks is the delivery chain
 - User hook config lives in the user's own PDS repo as com.communitytap.hook records — Convex mirrors this for fast querying but the PDS is the source of truth for user intent
 - Convex is the runtime layer: fan-out logic, event log, usage tracking, and limit enforcement all live there
 - AT Proto OAuth is the only auth mechanism — no separate accounts
@@ -38,7 +38,9 @@ User's PDS (com.communitytap.hook records)
         ↕ sync
     Convex DB ←── Frontend (SolidJS + TanStack Start) [scaffold done]
         ↑
-  Tap (Railway) ──→ Convex httpAction (fan-out) ──→ User webhooks
+  Tap (Railway) ──→ TanStack Start API route (fan-out) ──→ User webhooks
+                              │
+                              └──→ Convex DB
 ```
 
 **Starting point:** SolidJS + TanStack Start frontend with AT Proto OAuth and Convex already scaffolded.
@@ -63,14 +65,14 @@ Build the full UI and wire hook config to both PDS and Convex. No event delivery
 Deploy Tap and wire up the fan-out. Hooks start doing something.
 
 - Deploy Tap on Railway with persistent volume (SQLite), no `TAP_SIGNAL_COLLECTION` set — dynamic mode only
-- Convex `httpAction` receives events from Tap, looks up matching hooks, delivers to user webhooks via `Promise.allSettled`
+- TanStack Start API route receives events from Tap, looks up matching hooks in Convex, delivers to user webhooks via `Promise.allSettled`, and logs attempts back to Convex
 - Log every delivery attempt to the `events` table
-- Expose a `POST /hooks/addRepo` endpoint that proxies to Tap's `POST /repos/add` — developers call this with a DID whenever one of their users creates a relevant record
+- Expose a `POST /api/hooks/addRepo` endpoint that proxies to Tap's `POST /repos/add` — developers call this with a DID whenever one of their users creates a relevant record
 - Surface recent event log per hook in the UI
 
-> **Note:** without collection signal mode, Community Tap does not auto-discover repos network-wide. Repo discovery is the developer's responsibility — they must call `/hooks/addRepo` for each of their users' DIDs. This is an acceptable tradeoff for a toy app service.
+> **Note:** without collection signal mode, Community Tap does not auto-discover repos network-wide. Repo discovery is the developer's responsibility — they must call `/api/hooks/addRepo` for each of their users' DIDs. This is an acceptable tradeoff for a toy app service.
 
-> **Auth for `/hooks/addRepo`:** this is a machine-to-machine endpoint called by the developer's backend, not the browser. AT Proto OAuth does not apply here. Protect it with a simple shared secret in an env var.
+> **Auth for `/api/hooks/addRepo`:** this is a machine-to-machine endpoint called by the developer's backend, not the browser. AT Proto OAuth does not apply here. Phase 3 replaces the initial shared-secret idea with per-user API keys.
 
 ---
 
@@ -78,9 +80,10 @@ Deploy Tap and wire up the fan-out. Hooks start doing something.
 
 Make it safe to open publicly.
 
-- Enforce limits derived from the `events` table: 1000 events/day and 50 events/minute per user
+- Enforce limits from bounded indexed reads/reservations in the `events` table: 1000 delivery attempts/day and 50 delivery attempts/minute per user
 - When a limit is hit: pause delivery, show warning in UI
 - Per-hook webhook timeout cap so slow endpoints don't block others
-- Per-user API keys for `/hooks/addRepo` (replacing the Phase 2 shared secret), with validation that the submitted DID has a matching hook in Convex
+- Per-user API keys for `/api/hooks/addRepo`, with validation that the submitted NSID has a matching active hook in Convex.
+- The user also has the option to create a webhook signing secret so receivers can verify requests came from this service.
 - Admin view (your DID only): all users, hook counts, pause/unpause
 - Public landing page + README
