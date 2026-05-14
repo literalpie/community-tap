@@ -9,6 +9,7 @@ const convex = new ConvexHttpClient(process.env.VITE_CONVEX_URL!)
 async function handleHookRecordEvent(
   event: Extract<TapEvent, { type: 'record' }>,
 ): Promise<Response> {
+  console.log('hook record event:', { did: event.did, collection: event.collection, rkey: event.rkey, action: event.action });
   const recordUri = `at://${event.did}/${event.collection}/${event.rkey}`;
 
   if (event.action === 'delete') {
