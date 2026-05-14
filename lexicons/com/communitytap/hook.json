@@ -7,10 +7,11 @@
       "key": "tid",
       "record": {
         "type": "object",
-        "required": ["nsid", "webhookUrl", "createdAt"],
+        "required": ["nsid", "webhookUrl", "serviceId", "createdAt"],
         "properties": {
           "nsid": { "type": "string" },
           "webhookUrl": { "type": "string", "format": "uri" },
+          "serviceId": { "type": "string" },
           "createdAt": { "type": "string", "format": "datetime" }
         }
       }

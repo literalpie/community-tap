@@ -12,7 +12,6 @@ import type * as auth from "../auth.js";
 import type * as events from "../events.js";
 import type * as hooks from "../hooks.js";
 import type * as repos from "../repos.js";
-import type * as todos from "../todos.js";
 import type * as users from "../users.js";
 
 import type {
@@ -26,7 +25,6 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   hooks: typeof hooks;
   repos: typeof repos;
-  todos: typeof todos;
   users: typeof users;
 }>;
 
