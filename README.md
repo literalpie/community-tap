@@ -23,17 +23,17 @@ cp .env.example .env.local
 
 ### Environment Variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `CONVEX_DEPLOYMENT` | yes | Your Convex deployment name (set by `pnpm convex dev`) |
-| `VITE_CONVEX_URL` | yes | Your Convex HTTP endpoint (found in Convex dashboard) |
-| `CONVEX_SERVER_SECRET` | yes | Shared secret between TanStack and Convex — set to any random string; must match in both environments |
-| `COMMUNITY_TAP_SERVICE_ID` | yes | Used to scope hook records to this instance (e.g. `my.community-tap`) |
-| `VITE_PUBLIC_URL` | production | Public URL for OAuth client metadata |
-| `PRIVATE_KEY` | production | ES256 private JWK for OAuth `private_key_jwt` auth (generate with `pnpm gen-key`) |
-| `TAP_BASE_URL` | yes | URL of your Tap instance |
-| `TAP_ADMIN_PASSWORD` | yes | Admin password for your Tap instance |
-| `TAP_WEBHOOK_SECRET` | yes | Secret shared with Tap for outbound event delivery |
+| Variable                   | Required   | Description                                                                                           |
+| -------------------------- | ---------- | ----------------------------------------------------------------------------------------------------- |
+| `CONVEX_DEPLOYMENT`        | yes        | Your Convex deployment name (set by `pnpm convex dev`)                                                |
+| `VITE_CONVEX_URL`          | yes        | Your Convex HTTP endpoint (found in Convex dashboard)                                                 |
+| `CONVEX_SERVER_SECRET`     | yes        | Shared secret between TanStack and Convex — set to any random string; must match in both environments |
+| `COMMUNITY_TAP_SERVICE_ID` | yes        | Used to scope hook records to this instance (e.g. `my.community-tap`)                                 |
+| `VITE_PUBLIC_URL`          | production | Public URL for OAuth client metadata                                                                  |
+| `PRIVATE_KEY`              | production | ES256 private JWK for OAuth `private_key_jwt` auth (generate with `pnpm gen-key`)                     |
+| `TAP_BASE_URL`             | yes        | URL of your Tap instance                                                                              |
+| `TAP_ADMIN_PASSWORD`       | yes        | Admin password for your Tap instance                                                                  |
+| `TAP_WEBHOOK_SECRET`       | yes        | Secret shared with Tap for outbound event delivery                                                    |
 
 ### Run Convex
 
@@ -44,6 +44,7 @@ pnpm dlx convex dev
 ```
 
 This will:
+
 - Start the Convex dev server
 - Apply the schema (creates tables: `hooks`, `users`, `events`, `repoRegistrations`, etc.)
 - Prompt you to link your Convex project (follow the prompts)
@@ -107,11 +108,11 @@ Events are delivered as POST requests with the raw Tap event as the JSON body.
 
 ### Headers
 
-| Header | Description |
-|---|---|
-| `X-Community-Tap-Event` | Always `true` |
-| `X-Community-Tap-Nsid` | The collection/NSID of the record |
-| `X-Community-Tap-Timestamp` | Unix milliseconds |
+| Header                      | Description                                             |
+| --------------------------- | ------------------------------------------------------- |
+| `X-Community-Tap-Event`     | Always `true`                                           |
+| `X-Community-Tap-Nsid`      | The collection/NSID of the record                       |
+| `X-Community-Tap-Timestamp` | Unix milliseconds                                       |
 | `X-Community-Tap-Signature` | HMAC-SHA256 signature (if signing secret is configured) |
 
 ### Signature Verification

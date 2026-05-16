@@ -42,7 +42,9 @@ export const listByUser = query({
 
     return await ctx.db
       .query("repoRegistrations")
-      .withIndex("by_registeredBy", (q) => q.eq("registeredBy", args.registeredBy))
+      .withIndex("by_registeredBy", (q) =>
+        q.eq("registeredBy", args.registeredBy),
+      )
       .order("desc")
       .collect();
   },

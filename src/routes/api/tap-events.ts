@@ -262,10 +262,19 @@ export const Route = createFileRoute("/api/tap-events")({
           >;
 
           if (event.collection === "com.communitytap.hook") {
-            return await handleHookRecordEvent(event, convex, CONVEX_SERVER_SECRET);
+            return await handleHookRecordEvent(
+              event,
+              convex,
+              CONVEX_SERVER_SECRET,
+            );
           }
 
-          return await deliverToMatchingHooks(event, rawEvent, convex, CONVEX_SERVER_SECRET);
+          return await deliverToMatchingHooks(
+            event,
+            rawEvent,
+            convex,
+            CONVEX_SERVER_SECRET,
+          );
         } catch (error) {
           console.error("Error handling tap event:", error);
           return new Response(
