@@ -1,13 +1,17 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireServerSecret } from "./helpers";
 
 export const upsert = mutation({
   args: {
+    serverSecret: v.string(),
     did: v.string(),
     handle: v.string(),
     lastSeen: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    requireServerSecret(args.serverSecret);
+
     const existing = await ctx.db
       .query("users")
       .withIndex("by_did", (q) => q.eq("did", args.did))
@@ -30,8 +34,13 @@ export const upsert = mutation({
 });
 
 export const getByDid = query({
-  args: { did: v.string() },
+  args: {
+    serverSecret: v.string(),
+    did: v.string(),
+  },
   handler: async (ctx, args) => {
+    requireServerSecret(args.serverSecret);
+
     return await ctx.db
       .query("users")
       .withIndex("by_did", (q) => q.eq("did", args.did))

@@ -1,7 +1,13 @@
 import { createFileRoute } from "@tanstack/solid-router";
 import { setCookie } from "@tanstack/solid-start/server";
-import { getConvexClient, getOAuthClient } from "~/auth/client";
+import { ConvexHttpClient } from "convex/browser";
+import { getOAuthClient } from "~/auth/client";
 import { api } from "../../../convex/_generated/api";
+
+const CONVEX_SERVER_SECRET = process.env.CONVEX_SERVER_SECRET;
+if (!CONVEX_SERVER_SECRET) {
+  throw new Error("CONVEX_SERVER_SECRET is not set");
+}
 
 export const Route = createFileRoute("/oauth/callback")({
   server: {
@@ -18,8 +24,10 @@ export const Route = createFileRoute("/oauth/callback")({
 
           // Upsert user in Convex
           try {
-            const convex = getConvexClient();
+            const convexUrl = import.meta.env.VITE_CONVEX_URL;
+            const convex = new ConvexHttpClient(convexUrl);
             await convex.mutation(api.users.upsert, {
+              serverSecret: CONVEX_SERVER_SECRET,
               did: session.did,
               handle: "",
               lastSeen: Date.now(),

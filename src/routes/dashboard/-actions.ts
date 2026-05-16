@@ -7,6 +7,10 @@ import { createHookRecord, deleteHookRecord, listHookRecords } from "~/lib/pds";
 import { api } from "../../../convex/_generated/api";
 
 const SERVICE_ID = process.env.COMMUNITY_TAP_SERVICE_ID;
+const CONVEX_SERVER_SECRET = process.env.CONVEX_SERVER_SECRET;
+if (!CONVEX_SERVER_SECRET) {
+  throw new Error("CONVEX_SERVER_SECRET is not set");
+}
 
 function getConvexHttpClient(): ConvexHttpClient {
   const url = import.meta.env.VITE_CONVEX_URL;
@@ -67,6 +71,7 @@ export const createHookOnPDS = createServerFn({ method: "POST" })
     // Check for duplicate in Convex
     const convex = getConvexHttpClient();
     const existingHooks = await convex.query(api.hooks.listByUser, {
+      serverSecret: CONVEX_SERVER_SECRET,
       userId: did,
     });
     const duplicate = existingHooks.find((h) => h.nsid === data.nsid);
@@ -98,6 +103,7 @@ export const createHookOnPDS = createServerFn({ method: "POST" })
     // Write to Convex
     try {
       await convex.mutation(api.hooks.upsert, {
+        serverSecret: CONVEX_SERVER_SECRET,
         userId: did,
         nsid: data.nsid,
         webhookUrl: data.webhookUrl,
@@ -155,6 +161,7 @@ export const deleteHookOnPDS = createServerFn({ method: "POST" })
     try {
       const convex = getConvexHttpClient();
       await convex.mutation(api.hooks.deleteByRecordUri, {
+        serverSecret: CONVEX_SERVER_SECRET,
         recordUri: data.uri,
       });
     } catch (convexErr) {
@@ -179,6 +186,7 @@ export const syncHooksFromPDS = createServerFn({ method: "POST" }).handler(
 
     // Get Convex records
     const convexHooks = await convex.query(api.hooks.listByUser, {
+      serverSecret: CONVEX_SERVER_SECRET,
       userId: did,
     });
     const convexUris = new Set(convexHooks.map((h) => h.recordUri));
@@ -188,6 +196,7 @@ export const syncHooksFromPDS = createServerFn({ method: "POST" }).handler(
       .filter((record) => !convexUris.has(record.uri))
       .map((record) =>
         convex.mutation(api.hooks.upsert, {
+          serverSecret: CONVEX_SERVER_SECRET,
           userId: did,
           nsid: record.value.nsid,
           webhookUrl: record.value.webhookUrl,
@@ -204,6 +213,7 @@ export const syncHooksFromPDS = createServerFn({ method: "POST" }).handler(
       .filter((hook) => !pdsUris.has(hook.recordUri))
       .map((hook) =>
         convex.mutation(api.hooks.deleteByRecordUri, {
+          serverSecret: CONVEX_SERVER_SECRET,
           recordUri: hook.recordUri,
         }),
       );

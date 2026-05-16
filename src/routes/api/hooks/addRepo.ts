@@ -8,6 +8,10 @@ if (!convexUrl) {
   throw new Error("VITE_CONVEX_URL is not set");
 }
 const convex = new ConvexHttpClient(convexUrl);
+const CONVEX_SERVER_SECRET = process.env.CONVEX_SERVER_SECRET;
+if (!CONVEX_SERVER_SECRET) {
+  throw new Error("CONVEX_SERVER_SECRET is not set");
+}
 
 // Real Tap client - needs Node.js, so we import dynamically in the handler
 async function getTapClient() {
@@ -32,7 +36,9 @@ export const Route = createFileRoute("/api/hooks/addRepo")({
           }
 
           // Check if any hooks exist for this repo
-          const allHooks = await convex.query(api.hooks.listAll);
+          const allHooks = await convex.query(api.hooks.listAll, {
+            serverSecret: CONVEX_SERVER_SECRET,
+          });
           const hooksForRepo = allHooks.filter((h) => h.isActive);
 
           if (hooksForRepo.length === 0) {
@@ -54,6 +60,7 @@ export const Route = createFileRoute("/api/hooks/addRepo")({
 
           // Store registration in Convex
           await convex.mutation(api.repos.registerRepo, {
+            serverSecret: CONVEX_SERVER_SECRET,
             repoDid,
             registeredBy: registeredBy || "unknown",
           });

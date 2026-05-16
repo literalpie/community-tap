@@ -1,15 +1,19 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireServerSecret } from "./helpers";
 
 export const registerRepo = mutation({
   args: {
+    serverSecret: v.string(),
     repoDid: v.string(),
     registeredBy: v.string(),
   },
-  handler: async (ctx, { repoDid, registeredBy }) => {
+  handler: async (ctx, args) => {
+    requireServerSecret(args.serverSecret);
+
     const existing = await ctx.db
       .query("repoRegistrations")
-      .withIndex("by_repo", (q) => q.eq("repoDid", repoDid))
+      .withIndex("by_repo", (q) => q.eq("repoDid", args.repoDid))
       .first();
 
     if (existing) {
@@ -20,8 +24,8 @@ export const registerRepo = mutation({
     }
 
     return await ctx.db.insert("repoRegistrations", {
-      repoDid,
-      registeredBy,
+      repoDid: args.repoDid,
+      registeredBy: args.registeredBy,
       registeredAt: Date.now(),
       lastSeenAt: Date.now(),
     });
@@ -29,11 +33,16 @@ export const registerRepo = mutation({
 });
 
 export const listByUser = query({
-  args: { registeredBy: v.string() },
-  handler: async (ctx, { registeredBy }) => {
+  args: {
+    serverSecret: v.string(),
+    registeredBy: v.string(),
+  },
+  handler: async (ctx, args) => {
+    requireServerSecret(args.serverSecret);
+
     return await ctx.db
       .query("repoRegistrations")
-      .withIndex("by_registeredBy", (q) => q.eq("registeredBy", registeredBy))
+      .withIndex("by_registeredBy", (q) => q.eq("registeredBy", args.registeredBy))
       .order("desc")
       .collect();
   },

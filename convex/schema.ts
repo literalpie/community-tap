@@ -16,17 +16,32 @@ export default defineSchema({
     webhookUrl: v.string(),
     recordUri: v.string(),
     isActive: v.boolean(),
+    pausedAt: v.optional(v.number()),
+    pausedReason: v.optional(
+      v.union(
+        v.literal("daily_limit"),
+        v.literal("minute_limit"),
+        v.literal("admin"),
+      ),
+    ),
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_nsid", ["nsid"])
     .index("by_userId_nsid", ["userId", "nsid"])
-    .index("by_recordUri", ["recordUri"]),
+    .index("by_recordUri", ["recordUri"])
+    .index("by_userId_and_pausedAt", ["userId", "pausedAt"]),
   users: defineTable({
     did: v.string(),
     handle: v.string(),
     lastSeen: v.number(),
-  }).index("by_did", ["did"]),
+    addRepoApiKeyHash: v.optional(v.string()),
+    addRepoApiKeyCreatedAt: v.optional(v.number()),
+    webhookSigningSecret: v.optional(v.string()),
+    webhookSigningSecretCreatedAt: v.optional(v.number()),
+  })
+    .index("by_did", ["did"])
+    .index("by_addRepoApiKeyHash", ["addRepoApiKeyHash"]),
   events: defineTable({
     hookId: v.id("hooks"),
     userId: v.string(),
@@ -47,6 +62,13 @@ export default defineSchema({
     success: v.boolean(),
     error: v.optional(v.string()),
     timestamp: v.number(),
+    deliveryStatus: v.optional(
+      v.union(
+        v.literal("reserved"),
+        v.literal("delivered"),
+        v.literal("failed"),
+      ),
+    ),
   })
     .index("by_hook", ["hookId", "timestamp"])
     .index("by_user", ["userId", "timestamp"])
@@ -57,7 +79,9 @@ export default defineSchema({
     registeredBy: v.string(),
     registeredAt: v.number(),
     lastSeenAt: v.number(),
+    nsid: v.optional(v.string()),
   })
     .index("by_repo", ["repoDid"])
-    .index("by_registeredBy", ["registeredBy"]),
+    .index("by_registeredBy", ["registeredBy"])
+    .index("by_registeredBy_and_nsid", ["registeredBy", "nsid"]),
 });

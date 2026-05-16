@@ -5,6 +5,11 @@ import { getOAuthClient } from "~/auth/client";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
+const CONVEX_SERVER_SECRET = process.env.CONVEX_SERVER_SECRET;
+if (!CONVEX_SERVER_SECRET) {
+  throw new Error("CONVEX_SERVER_SECRET is not set");
+}
+
 function getConvexHttpClient(): ConvexHttpClient {
   const url = import.meta.env.VITE_CONVEX_URL;
   if (!url) {
@@ -31,7 +36,10 @@ async function getAuthenticatedDid(): Promise<string> {
 export const listHooks = createServerFn({ method: "GET" }).handler(async () => {
   const did = await getAuthenticatedDid();
   const convex = getConvexHttpClient();
-  const hooks = await convex.query(api.hooks.listByUser, { userId: did });
+  const hooks = await convex.query(api.hooks.listByUser, {
+    serverSecret: CONVEX_SERVER_SECRET,
+    userId: did,
+  });
   return { did, hooks: hooks as Doc<"hooks">[] };
 });
 
@@ -56,11 +64,15 @@ export const getHookById = createServerFn({ method: "GET" })
     const did = await getAuthenticatedDid();
     const convex = getConvexHttpClient();
     const hookIdTyped = ctx.data.hookId as Id<"hooks">;
-    const hook = await convex.query(api.hooks.getById, { id: hookIdTyped });
+    const hook = await convex.query(api.hooks.getById, {
+      serverSecret: CONVEX_SERVER_SECRET,
+      id: hookIdTyped,
+    });
     if (!hook || hook.userId !== did) {
       throw new Error("Hook not found");
     }
     const events = await convex.query(api.events.getEventsForHook, {
+      serverSecret: CONVEX_SERVER_SECRET,
       hookId: hookIdTyped,
       limit: 50,
     });

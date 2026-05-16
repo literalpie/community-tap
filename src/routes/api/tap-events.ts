@@ -9,6 +9,10 @@ if (!convexUrl) {
   throw new Error("VITE_CONVEX_URL is not set");
 }
 const convex = new ConvexHttpClient(convexUrl);
+const CONVEX_SERVER_SECRET = process.env.CONVEX_SERVER_SECRET!;
+if (!CONVEX_SERVER_SECRET) {
+  throw new Error("CONVEX_SERVER_SECRET is not set");
+}
 
 async function handleHookRecordEvent(
   event: Extract<TapEvent, { type: "record" }>,
@@ -23,6 +27,7 @@ async function handleHookRecordEvent(
 
   if (event.action === "delete") {
     const removed = await convex.mutation(api.hooks.deleteByRecordUri, {
+      serverSecret: CONVEX_SERVER_SECRET,
       recordUri,
     });
     console.log(
@@ -75,9 +80,13 @@ async function handleHookRecordEvent(
 
   const userId = event.did;
 
-  const existingUser = await convex.query(api.users.getByDid, { did: userId });
+  const existingUser = await convex.query(api.users.getByDid, {
+    serverSecret: CONVEX_SERVER_SECRET,
+    did: userId,
+  });
   if (!existingUser) {
     await convex.mutation(api.users.upsert, {
+      serverSecret: CONVEX_SERVER_SECRET,
       did: userId,
       handle: userId,
       lastSeen: Date.now(),
@@ -85,6 +94,7 @@ async function handleHookRecordEvent(
   }
 
   const hookId = await convex.mutation(api.hooks.upsert, {
+    serverSecret: CONVEX_SERVER_SECRET,
     userId,
     nsid,
     webhookUrl,
@@ -108,7 +118,9 @@ async function deliverToMatchingHooks(
 ): Promise<Response> {
   const collection = event.collection;
 
-  const allHooks = await convex.query(api.hooks.listAll);
+  const allHooks = await convex.query(api.hooks.listAll, {
+    serverSecret: CONVEX_SERVER_SECRET,
+  });
   const matchingHooks = allHooks.filter(
     (h) => h.nsid === collection && h.isActive,
   );
@@ -162,6 +174,7 @@ async function deliverToMatchingHooks(
       }
 
       const logPayload = {
+        serverSecret: CONVEX_SERVER_SECRET,
         hookId: hook._id,
         userId: hook.userId,
         nsid: hook.nsid,
