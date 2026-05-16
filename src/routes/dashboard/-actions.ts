@@ -183,33 +183,34 @@ export const syncHooksFromPDS = createServerFn({ method: "POST" }).handler(
     });
     const convexUris = new Set(convexHooks.map((h) => h.recordUri));
 
-    let added = 0;
-    let removed = 0;
-
     // In PDS but not Convex → upsert
-    for (const record of matchingRecords) {
-      if (!convexUris.has(record.uri)) {
-        await convex.mutation(api.hooks.upsert, {
+    const upserts = matchingRecords
+      .filter((record) => !convexUris.has(record.uri))
+      .map((record) =>
+        convex.mutation(api.hooks.upsert, {
           userId: did,
           nsid: record.value.nsid,
           webhookUrl: record.value.webhookUrl,
           recordUri: record.uri,
           createdAt: new Date(record.value.createdAt).getTime() || Date.now(),
           isActive: true,
-        });
-        added++;
-      }
-    }
+        }),
+      );
+    const upsertResults = await Promise.allSettled(upserts);
+    const added = upsertResults.filter((r) => r.status === "fulfilled").length;
 
     // In Convex but not PDS → delete
-    for (const hook of convexHooks) {
-      if (!pdsUris.has(hook.recordUri)) {
-        await convex.mutation(api.hooks.deleteByRecordUri, {
+    const deletes = convexHooks
+      .filter((hook) => !pdsUris.has(hook.recordUri))
+      .map((hook) =>
+        convex.mutation(api.hooks.deleteByRecordUri, {
           recordUri: hook.recordUri,
-        });
-        removed++;
-      }
-    }
+        }),
+      );
+    const deleteResults = await Promise.allSettled(deletes);
+    const removed = deleteResults.filter(
+      (r) => r.status === "fulfilled",
+    ).length;
 
     return { added, removed };
   },

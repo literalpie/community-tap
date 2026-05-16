@@ -36,8 +36,8 @@ hooks: defineTable({
   isActive: v.boolean(),
   createdAt: v.number(),
 })
-.index("by_user", ["userId"])
-.index("by_nsid", ["nsid"])
+  .index("by_user", ["userId"])
+  .index("by_nsid", ["nsid"]);
 
 events: defineTable({
   hookId: v.id("hooks"),
@@ -46,7 +46,11 @@ events: defineTable({
   repo: v.string(),
   collection: v.string(),
   rkey: v.optional(v.string()),
-  action: v.union(v.literal("create"), v.literal("update"), v.literal("delete")),
+  action: v.union(
+    v.literal("create"),
+    v.literal("update"),
+    v.literal("delete"),
+  ),
   webhookUrl: v.string(),
   requestBody: v.string(),
   responseStatus: v.optional(v.number()),
@@ -55,14 +59,14 @@ events: defineTable({
   success: v.boolean(),
   error: v.optional(v.string()),
   timestamp: v.number(),
-})
+});
 
 repoRegistrations: defineTable({
   repoDid: v.string(),
   registeredBy: v.string(),
   registeredAt: v.number(),
   lastSeenAt: v.number(),
-})
+});
 ```
 
 ### Local Development

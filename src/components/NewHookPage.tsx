@@ -35,7 +35,7 @@ export default function NewHookPage() {
 
     // Basic URL validation
     try {
-      new URL(webhookUrl());
+      void new URL(webhookUrl());
     } catch {
       setError("Invalid webhook URL");
       return;

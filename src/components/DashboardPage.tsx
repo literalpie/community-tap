@@ -217,7 +217,7 @@ function NewHookModal(props: { onClose: () => void; onSuccess: () => void }) {
 
     // Basic URL validation
     try {
-      new URL(webhookUrl());
+      void new URL(webhookUrl());
     } catch {
       setError("Invalid webhook URL");
       return;
