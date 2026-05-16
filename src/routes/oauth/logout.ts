@@ -1,37 +1,37 @@
-import { createFileRoute } from '@tanstack/solid-router'
-import { getOAuthClient } from '~/auth/client'
-import { getCookie, deleteCookie } from '@tanstack/solid-start/server'
+import { createFileRoute } from "@tanstack/solid-router";
+import { deleteCookie, getCookie } from "@tanstack/solid-start/server";
+import { getOAuthClient } from "~/auth/client";
 
-export const Route = createFileRoute('/oauth/logout')({
+export const Route = createFileRoute("/oauth/logout")({
   server: {
     handlers: {
       POST: async () => {
         try {
-          const did = getCookie('did')
-          
+          const did = getCookie("did");
+
           if (did) {
-            const client = await getOAuthClient()
-            await client.revoke(did)
+            const client = await getOAuthClient();
+            await client.revoke(did);
           }
 
-          deleteCookie('did')
+          deleteCookie("did");
 
           return new Response(null, {
             status: 302,
             headers: {
-              Location: '/',
+              Location: "/",
             },
-          })
+          });
         } catch (error) {
-          console.error('Logout error:', error)
+          console.error("Logout error:", error);
           return new Response(null, {
             status: 302,
             headers: {
-              Location: '/',
+              Location: "/",
             },
-          })
+          });
         }
       },
     },
   },
-})
+});

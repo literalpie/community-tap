@@ -1,11 +1,9 @@
-import { defineConfig } from 'vite'
-import { devtools } from '@tanstack/devtools-vite'
-import tailwindcss from '@tailwindcss/vite'
-
-import { tanstackStart } from '@tanstack/solid-start/plugin/vite'
-
-import solidPlugin from 'vite-plugin-solid'
-import { nitro } from 'nitro/vite'
+import tailwindcss from "@tailwindcss/vite";
+import { devtools } from "@tanstack/devtools-vite";
+import { tanstackStart } from "@tanstack/solid-start/plugin/vite";
+import { nitro } from "nitro/vite";
+import { defineConfig } from "vite";
+import solidPlugin from "vite-plugin-solid";
 
 export default defineConfig({
   resolve: { tsconfigPaths: true },
@@ -16,4 +14,4 @@ export default defineConfig({
     tanstackStart(),
     solidPlugin({ ssr: true }),
   ],
-})
+});

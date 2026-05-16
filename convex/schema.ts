@@ -1,5 +1,5 @@
-import { defineSchema, defineTable } from 'convex/server'
-import { v } from 'convex/values'
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
 
 export default defineSchema({
   authStates: defineTable({
@@ -34,7 +34,11 @@ export default defineSchema({
     repo: v.string(),
     collection: v.string(),
     rkey: v.optional(v.string()),
-    action: v.union(v.literal("create"), v.literal("update"), v.literal("delete")),
+    action: v.union(
+      v.literal("create"),
+      v.literal("update"),
+      v.literal("delete"),
+    ),
     webhookUrl: v.string(),
     requestBody: v.string(),
     responseStatus: v.optional(v.number()),
@@ -48,7 +52,7 @@ export default defineSchema({
     .index("by_user", ["userId", "timestamp"])
     .index("by_time", ["timestamp"]),
 
-repoRegistrations: defineTable({
+  repoRegistrations: defineTable({
     repoDid: v.string(),
     registeredBy: v.string(),
     registeredAt: v.number(),
@@ -56,4 +60,4 @@ repoRegistrations: defineTable({
   })
     .index("by_repo", ["repoDid"])
     .index("by_registeredBy", ["registeredBy"]),
-})
+});

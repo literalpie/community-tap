@@ -1,19 +1,19 @@
-import { createFileRoute, redirect } from '@tanstack/solid-router'
-import { getSessionFn } from '~/routes/-session'
-import { listHooks } from '~/routes/dashboard/-queries'
-import DashboardPage from '~/components/DashboardPage'
+import { createFileRoute, redirect } from "@tanstack/solid-router";
+import DashboardPage from "~/components/DashboardPage";
+import { getSessionFn } from "~/routes/-session";
+import { listHooks } from "~/routes/dashboard/-queries";
 
-export const Route = createFileRoute('/dashboard/')({
+export const Route = createFileRoute("/dashboard/")({
   component: DashboardPage,
   beforeLoad: async () => {
-    const data = await getSessionFn()
+    const data = await getSessionFn();
     if (!data.session) {
-      throw redirect({ to: '/' })
+      throw redirect({ to: "/" });
     }
-    return { session: data.session }
+    return { session: data.session };
   },
   loader: async () => {
-    const result = await listHooks()
-    return { hooks: result.hooks }
+    const result = await listHooks();
+    return { hooks: result.hooks };
   },
-})
+});

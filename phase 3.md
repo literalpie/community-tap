@@ -6,17 +6,17 @@
 
 ## Decisions Summary
 
-| Question                      | Decision                                                                                     |
-| ----------------------------- | -------------------------------------------------------------------------------------------- |
-| Admin DID                     | Read from `COMMUNITY_TAP_ADMIN_DID`                                                          |
-| `/api/hooks/addRepo` API Key  | One inbound API key per user; store a hash, show the raw key only on create/regenerate       |
-| Webhook Verification          | Optional per-user outbound signing secret; send HMAC headers with webhook deliveries         |
-| Limit Behavior                | Reserve rows in `events` before delivery. Auto-resume when the relevant window resets. Drop while paused |
-| Limit Source                  | Use bounded indexed reads from `events`; no separate `eventCounters` table for now          |
-| Event Retention               | No pruning — leave unbounded for now                                                         |
-| Webhook Timeout               | Global hard cap of 5000ms (5 seconds)                                                        |
-| Landing Page                  | Replace `/` with a public landing page; authed users redirect to `/dashboard`                |
-| Convex Boundary               | Permanent server-secret boundary; TanStack Start is the backend-for-frontend        |
+| Question                     | Decision                                                                                                 |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Admin DID                    | Read from `COMMUNITY_TAP_ADMIN_DID`                                                                      |
+| `/api/hooks/addRepo` API Key | One inbound API key per user; store a hash, show the raw key only on create/regenerate                   |
+| Webhook Verification         | Optional per-user outbound signing secret; send HMAC headers with webhook deliveries                     |
+| Limit Behavior               | Reserve rows in `events` before delivery. Auto-resume when the relevant window resets. Drop while paused |
+| Limit Source                 | Use bounded indexed reads from `events`; no separate `eventCounters` table for now                       |
+| Event Retention              | No pruning — leave unbounded for now                                                                     |
+| Webhook Timeout              | Global hard cap of 5000ms (5 seconds)                                                                    |
+| Landing Page                 | Replace `/` with a public landing page; authed users redirect to `/dashboard`                            |
+| Convex Boundary              | Permanent server-secret boundary; TanStack Start is the backend-for-frontend                             |
 
 ---
 

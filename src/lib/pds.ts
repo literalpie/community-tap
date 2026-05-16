@@ -1,4 +1,4 @@
-import { Agent } from "@atproto/api";
+import type { Agent } from "@atproto/api";
 
 interface CreateHookRecordArgs {
   nsid: string;
@@ -24,7 +24,7 @@ const COLLECTION = "com.communitytap.hook";
 export async function createHookRecord(
   agent: Agent,
   did: string,
-  args: CreateHookRecordArgs
+  args: CreateHookRecordArgs,
 ): Promise<{ uri: string; cid: string }> {
   const record = {
     nsid: args.nsid,
@@ -44,7 +44,7 @@ export async function createHookRecord(
 
 export async function deleteHookRecord(
   agent: Agent,
-  uri: string
+  uri: string,
 ): Promise<void> {
   const parsed = parseAtUri(uri);
   if (!parsed) {
@@ -58,7 +58,10 @@ export async function deleteHookRecord(
   });
 }
 
-export async function listHookRecords(agent: Agent, did: string): Promise<ListHookRecord[]> {
+export async function listHookRecords(
+  agent: Agent,
+  did: string,
+): Promise<ListHookRecord[]> {
   const result = await agent.com.atproto.repo.listRecords({
     repo: did,
     collection: COLLECTION,

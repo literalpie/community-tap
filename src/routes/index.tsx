@@ -1,16 +1,16 @@
-import { createFileRoute, redirect } from '@tanstack/solid-router'
-import { getSessionFn } from '~/routes/-session'
-import { LoginForm } from '~/components/LoginForm'
+import { createFileRoute, redirect } from "@tanstack/solid-router";
+import { LoginForm } from "~/components/LoginForm";
+import { getSessionFn } from "~/routes/-session";
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   component: Home,
   beforeLoad: async () => {
-    const data = await getSessionFn()
+    const data = await getSessionFn();
     if (data.session) {
-      throw redirect({ to: '/dashboard' })
+      throw redirect({ to: "/dashboard" });
     }
   },
-})
+});
 
 function Home() {
   return (
@@ -21,5 +21,5 @@ function Home() {
         <LoginForm />
       </div>
     </div>
-  )
+  );
 }

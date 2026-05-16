@@ -1,4 +1,4 @@
-import { query, mutation, internalQuery } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 export const listByUser = query({

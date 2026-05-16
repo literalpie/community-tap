@@ -1,33 +1,33 @@
-import { createSignal } from 'solid-js'
+import { createSignal } from "solid-js";
 
 export function LoginForm() {
-  const [handle, setHandle] = createSignal('')
-  const [error, setError] = createSignal('')
-  const [loading, setLoading] = createSignal(false)
+  const [handle, setHandle] = createSignal("");
+  const [error, setError] = createSignal("");
+  const [loading, setLoading] = createSignal(false);
 
   async function handleSubmit(e: SubmitEvent) {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
-        const response = await fetch('/oauth/login-api', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ handle: handle() }),
-        })
+      const response = await fetch("/oauth/login-api", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ handle: handle() }),
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed')
+        throw new Error(data.error || "Login failed");
       }
 
-      window.location.href = data.redirectUrl
+      window.location.href = data.redirectUrl;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -53,8 +53,8 @@ export function LoginForm() {
         disabled={loading()}
         class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
       >
-        {loading() ? 'Signing in...' : 'Sign in with AT-Proto'}
+        {loading() ? "Signing in..." : "Sign in with AT-Proto"}
       </button>
     </form>
-  )
+  );
 }
