@@ -1,21 +1,14 @@
 import { assureAdminAuth, parseTapEvent, type TapEvent } from "@atproto/tap";
 import { createFileRoute } from "@tanstack/solid-router";
 import { ConvexHttpClient } from "convex/browser";
+import { requireConvexServerSecret } from "~/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
-const convexUrl = process.env.VITE_CONVEX_URL;
-if (!convexUrl) {
-  throw new Error("VITE_CONVEX_URL is not set");
-}
-const convex = new ConvexHttpClient(convexUrl);
-const CONVEX_SERVER_SECRET = process.env.CONVEX_SERVER_SECRET!;
-if (!CONVEX_SERVER_SECRET) {
-  throw new Error("CONVEX_SERVER_SECRET is not set");
-}
-
 async function handleHookRecordEvent(
   event: Extract<TapEvent, { type: "record" }>,
+  convex: ConvexHttpClient,
+  CONVEX_SERVER_SECRET: string,
 ): Promise<Response> {
   console.log("hook record event:", {
     did: event.did,
@@ -115,6 +108,8 @@ async function handleHookRecordEvent(
 async function deliverToMatchingHooks(
   event: Extract<TapEvent, { type: "record" }>,
   rawEvent: unknown,
+  convex: ConvexHttpClient,
+  CONVEX_SERVER_SECRET: string,
 ): Promise<Response> {
   const collection = event.collection;
 
@@ -223,6 +218,13 @@ export const Route = createFileRoute("/api/tap-events")({
         });
       },
       POST: async ({ request }) => {
+        const convexUrl = process.env.VITE_CONVEX_URL;
+        if (!convexUrl) {
+          throw new Error("VITE_CONVEX_URL is not set");
+        }
+        const CONVEX_SERVER_SECRET = requireConvexServerSecret();
+        const convex = new ConvexHttpClient(convexUrl);
+
         console.log("Received Tap event");
 
         const tapPassword = process.env.TAP_ADMIN_PASSWORD;
@@ -260,10 +262,10 @@ export const Route = createFileRoute("/api/tap-events")({
           >;
 
           if (event.collection === "com.communitytap.hook") {
-            return await handleHookRecordEvent(event);
+            return await handleHookRecordEvent(event, convex, CONVEX_SERVER_SECRET);
           }
 
-          return await deliverToMatchingHooks(event, rawEvent);
+          return await deliverToMatchingHooks(event, rawEvent, convex, CONVEX_SERVER_SECRET);
         } catch (error) {
           console.error("Error handling tap event:", error);
           return new Response(

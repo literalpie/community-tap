@@ -1,18 +1,16 @@
 import { createFileRoute } from "@tanstack/solid-router";
 import { setCookie } from "@tanstack/solid-start/server";
 import { ConvexHttpClient } from "convex/browser";
+import { requireConvexServerSecret } from "~/lib/utils";
 import { getOAuthClient } from "~/auth/client";
 import { api } from "../../../convex/_generated/api";
-
-const CONVEX_SERVER_SECRET = process.env.CONVEX_SERVER_SECRET;
-if (!CONVEX_SERVER_SECRET) {
-  throw new Error("CONVEX_SERVER_SECRET is not set");
-}
 
 export const Route = createFileRoute("/oauth/callback")({
   server: {
     handlers: {
       GET: async ({ request }) => {
+        const CONVEX_SERVER_SECRET = requireConvexServerSecret();
+
         try {
           const url = new URL(request.url);
           console.log("[callback] request url:", url.toString());

@@ -25,7 +25,7 @@ cp .env.example .env.local
 
 | Variable | Required | Description |
 |---|---|---|
-| `CONVEX_DEPLOYMENT` | yes | Your Convex deployment name |
+| `CONVEX_DEPLOYMENT` | yes | Your Convex deployment name (set by `pnpm convex dev`) |
 | `VITE_CONVEX_URL` | yes | Your Convex HTTP endpoint (found in Convex dashboard) |
 | `CONVEX_SERVER_SECRET` | yes | Shared secret between TanStack and Convex — set to any random string; must match in both environments |
 | `COMMUNITY_TAP_SERVICE_ID` | yes | Used to scope hook records to this instance (e.g. `my.community-tap`) |
@@ -88,7 +88,6 @@ Content-Type: application/json
 
 {
   "repoDid": "did:plc:abc123",
-  "nsid": "com.example.record"
 }
 ```
 

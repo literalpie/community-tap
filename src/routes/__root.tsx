@@ -58,7 +58,7 @@ function RootComponent() {
                   <LogoutButton />
                 </>
               ) : (
-                <a href="/" class="text-sm text-blue-600 hover:underline">
+                <a href="/login" class="text-sm text-blue-600 hover:underline">
                   Sign in
                 </a>
               )}

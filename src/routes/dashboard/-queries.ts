@@ -1,14 +1,10 @@
 import { createServerFn } from "@tanstack/solid-start";
 import { getCookie } from "@tanstack/solid-start/server";
 import { ConvexHttpClient } from "convex/browser";
+import { requireConvexServerSecret } from "~/lib/utils";
 import { getOAuthClient } from "~/auth/client";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
-
-const CONVEX_SERVER_SECRET = process.env.CONVEX_SERVER_SECRET;
-if (!CONVEX_SERVER_SECRET) {
-  throw new Error("CONVEX_SERVER_SECRET is not set");
-}
 
 function getConvexHttpClient(): ConvexHttpClient {
   const url = import.meta.env.VITE_CONVEX_URL;
@@ -34,6 +30,7 @@ async function getAuthenticatedDid(): Promise<string> {
 }
 
 export const listHooks = createServerFn({ method: "GET" }).handler(async () => {
+  const CONVEX_SERVER_SECRET = requireConvexServerSecret();
   const did = await getAuthenticatedDid();
   const convex = getConvexHttpClient();
   const hooks = await convex.query(api.hooks.listByUser, {
@@ -61,6 +58,7 @@ export const getHookById = createServerFn({ method: "GET" })
     return data as { hookId: string };
   })
   .handler(async (ctx): Promise<GetHookResult> => {
+    const CONVEX_SERVER_SECRET = requireConvexServerSecret();
     const did = await getAuthenticatedDid();
     const convex = getConvexHttpClient();
     const hookIdTyped = ctx.data.hookId as Id<"hooks">;

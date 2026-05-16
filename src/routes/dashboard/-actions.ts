@@ -2,15 +2,10 @@ import { Agent } from "@atproto/api";
 import { createServerFn } from "@tanstack/solid-start";
 import { getCookie } from "@tanstack/solid-start/server";
 import { ConvexHttpClient } from "convex/browser";
+import { requireConvexServerSecret } from "~/lib/utils";
 import { getOAuthClient } from "~/auth/client";
 import { createHookRecord, deleteHookRecord, listHookRecords } from "~/lib/pds";
 import { api } from "../../../convex/_generated/api";
-
-const SERVICE_ID = process.env.COMMUNITY_TAP_SERVICE_ID;
-const CONVEX_SERVER_SECRET = process.env.CONVEX_SERVER_SECRET;
-if (!CONVEX_SERVER_SECRET) {
-  throw new Error("CONVEX_SERVER_SECRET is not set");
-}
 
 function getConvexHttpClient(): ConvexHttpClient {
   const url = import.meta.env.VITE_CONVEX_URL;
@@ -59,6 +54,8 @@ export const createHookOnPDS = createServerFn({ method: "POST" })
     return data as { nsid: string; webhookUrl: string };
   })
   .handler(async (ctx) => {
+    const SERVICE_ID = process.env.COMMUNITY_TAP_SERVICE_ID;
+    const CONVEX_SERVER_SECRET = requireConvexServerSecret();
     const data = ctx.data;
     const { agent, did } = await getSessionAgent();
 
@@ -143,6 +140,7 @@ export const deleteHookOnPDS = createServerFn({ method: "POST" })
     return data as { uri: string };
   })
   .handler(async (ctx) => {
+    const CONVEX_SERVER_SECRET = requireConvexServerSecret();
     const data = ctx.data;
     const { agent } = await getSessionAgent();
 
@@ -174,6 +172,8 @@ export const deleteHookOnPDS = createServerFn({ method: "POST" })
 
 export const syncHooksFromPDS = createServerFn({ method: "POST" }).handler(
   async () => {
+    const SERVICE_ID = process.env.COMMUNITY_TAP_SERVICE_ID;
+    const CONVEX_SERVER_SECRET = requireConvexServerSecret();
     const { agent, did } = await getSessionAgent();
     const convex = getConvexHttpClient();
 
