@@ -61,7 +61,6 @@ export default defineSchema({
     durationMs: v.number(),
     success: v.boolean(),
     error: v.optional(v.string()),
-    timestamp: v.number(),
     deliveryStatus: v.optional(
       v.union(
         v.literal("reserved"),
@@ -69,6 +68,7 @@ export default defineSchema({
         v.literal("failed"),
       ),
     ),
+    timestamp: v.number(),
   })
     .index("by_hook", ["hookId", "timestamp"])
     .index("by_user", ["userId", "timestamp"])
@@ -77,9 +77,11 @@ export default defineSchema({
   repoRegistrations: defineTable({
     repoDid: v.string(),
     registeredBy: v.string(),
+    nsid: v.optional(v.string()),
     registeredAt: v.number(),
     lastSeenAt: v.number(),
   })
     .index("by_repo", ["repoDid"])
-    .index("by_registeredBy", ["registeredBy"]),
+    .index("by_registeredBy", ["registeredBy"])
+    .index("by_registeredBy_and_nsid", ["registeredBy", "nsid"]),
 });

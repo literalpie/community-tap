@@ -47,3 +47,21 @@ export const getByDid = query({
       .first();
   },
 });
+
+export const getDeliveryInfo = query({
+  args: {
+    did: v.string(),
+    serverSecret: v.string(),
+  },
+  handler: async (ctx, { did, serverSecret }) => {
+    requireServerSecret(serverSecret);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_did", (q) => q.eq("did", did))
+      .first();
+    if (!user) return null;
+    return {
+      webhookSigningSecret: user.webhookSigningSecret,
+    };
+  },
+});
