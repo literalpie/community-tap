@@ -1,64 +1,64 @@
-import { createSignal, Show, For } from 'solid-js'
-import { listHooks } from '~/routes/dashboard/-queries'
+import { createSignal, Show, For } from "solid-js";
+import { listHooks } from "~/routes/dashboard/-queries";
 import {
   createHookOnPDS as createHookAction,
   deleteHookOnPDS as deleteHookAction,
   syncHooksFromPDS as syncAction,
-} from '~/routes/dashboard/-actions'
-import { Route } from '~/routes/dashboard'
-import { Link } from '@tanstack/solid-router'
+} from "~/routes/dashboard/-actions";
+import { Route } from "~/routes/dashboard";
+import { Link } from "@tanstack/solid-router";
 
 export default function DashboardPage() {
-  const loaderData = Route.useLoaderData()
-  
-  const [hooks, setHooks] = createSignal(loaderData().hooks)
-  const [loading, setLoading] = createSignal(false)
-  const [showNewForm, setShowNewForm] = createSignal(false)
-  const [syncResult, setSyncResult] = createSignal<string | null>(null)
-  const [lastSync, setLastSync] = createSignal<string | null>(null)
+  const loaderData = Route.useLoaderData();
+
+  const [hooks, setHooks] = createSignal(loaderData().hooks);
+  const [loading, setLoading] = createSignal(false);
+  const [showNewForm, setShowNewForm] = createSignal(false);
+  const [syncResult, setSyncResult] = createSignal<string | null>(null);
+  const [lastSync, setLastSync] = createSignal<string | null>(null);
 
   async function loadHooks() {
-    setLoading(true)
+    setLoading(true);
     try {
-      const result = await listHooks()
-      setHooks(result.hooks)
+      const result = await listHooks();
+      setHooks(result.hooks);
     } catch (err) {
-      console.error('Failed to load hooks:', err)
+      console.error("Failed to load hooks:", err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function handleDelete(recordUri: string) {
-    if (!confirm('Are you sure you want to delete this hook?')) return
+    if (!confirm("Are you sure you want to delete this hook?")) return;
     try {
-      await deleteHookAction({ data: { uri: recordUri } })
-      await loadHooks()
+      await deleteHookAction({ data: { uri: recordUri } });
+      await loadHooks();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete hook')
+      alert(err instanceof Error ? err.message : "Failed to delete hook");
     }
   }
 
   async function handleSync() {
-    setLoading(true)
+    setLoading(true);
     try {
-      const result = await syncAction()
-      setSyncResult(`Added ${result.added}, removed ${result.removed}`)
-      setLastSync(new Date().toLocaleString())
-      await loadHooks()
+      const result = await syncAction();
+      setSyncResult(`Added ${result.added}, removed ${result.removed}`);
+      setLastSync(new Date().toLocaleString());
+      await loadHooks();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Sync failed')
+      alert(err instanceof Error ? err.message : "Sync failed");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   function truncateUrl(url: string, maxLen = 40) {
-    return url.length > maxLen ? url.slice(0, maxLen) + '...' : url
+    return url.length > maxLen ? url.slice(0, maxLen) + "..." : url;
   }
 
   function formatDate(ts: number) {
-    return new Date(ts).toLocaleDateString()
+    return new Date(ts).toLocaleDateString();
   }
 
   return (
@@ -71,7 +71,7 @@ export default function DashboardPage() {
             disabled={loading()}
             class="px-4 py-2 border rounded-md hover:bg-zinc-50 disabled:opacity-50"
           >
-            {loading() ? 'Syncing...' : 'Sync from AT Proto'}
+            {loading() ? "Syncing..." : "Sync from AT Proto"}
           </button>
           <button
             onClick={() => setShowNewForm(true)}
@@ -85,7 +85,9 @@ export default function DashboardPage() {
       <Show when={syncResult()}>
         <div class="mb-4 p-3 bg-green-50 text-green-700 rounded-md text-sm">
           {syncResult()}
-          {lastSync() && <span class="ml-2 text-zinc-500">(last sync: {lastSync()})</span>}
+          {lastSync() && (
+            <span class="ml-2 text-zinc-500">(last sync: {lastSync()})</span>
+          )}
         </div>
       </Show>
 
@@ -106,11 +108,21 @@ export default function DashboardPage() {
           <table class="w-full">
             <thead class="bg-zinc-50 border-b">
               <tr>
-                <th class="px-4 py-3 text-left text-sm font-medium text-zinc-600">NSID</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-zinc-600">Webhook URL</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-zinc-600">Created</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-zinc-600">Status</th>
-                <th class="px-4 py-3 text-right text-sm font-medium text-zinc-600">Actions</th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-zinc-600">
+                  NSID
+                </th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-zinc-600">
+                  Webhook URL
+                </th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-zinc-600">
+                  Created
+                </th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-zinc-600">
+                  Status
+                </th>
+                <th class="px-4 py-3 text-right text-sm font-medium text-zinc-600">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -118,7 +130,7 @@ export default function DashboardPage() {
                 {(hook) => (
                   <tr class="border-b last:border-b-0 hover:bg-zinc-50">
                     <td class="px-4 py-3 text-sm font-mono">
-                      <Link 
+                      <Link
                         to="/dashboard/hooks/$hookId"
                         params={{ hookId: hook._id }}
                         class="text-blue-600 hover:underline"
@@ -129,16 +141,18 @@ export default function DashboardPage() {
                     <td class="px-4 py-3 text-sm text-zinc-600">
                       {truncateUrl(hook.webhookUrl)}
                     </td>
-                    <td class="px-4 py-3 text-sm text-zinc-600">{formatDate(hook.createdAt)}</td>
+                    <td class="px-4 py-3 text-sm text-zinc-600">
+                      {formatDate(hook.createdAt)}
+                    </td>
                     <td class="px-4 py-3">
                       <span
                         class={`inline-flex px-2 py-1 text-xs rounded-full ${
                           hook.isActive
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-zinc-100 text-zinc-600'
+                            ? "bg-green-100 text-green-700"
+                            : "bg-zinc-100 text-zinc-600"
                         }`}
                       >
-                        {hook.isActive ? 'Active' : 'Inactive'}
+                        {hook.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td class="px-4 py-3 text-right">
@@ -158,59 +172,64 @@ export default function DashboardPage() {
       </Show>
 
       <Show when={showNewForm()}>
-        <NewHookModal onClose={() => setShowNewForm(false)} onSuccess={loadHooks} />
+        <NewHookModal
+          onClose={() => setShowNewForm(false)}
+          onSuccess={loadHooks}
+        />
       </Show>
     </div>
-  )
+  );
 }
 
 function NewHookModal(props: { onClose: () => void; onSuccess: () => void }) {
-  const [nsid, setNsid] = createSignal('')
-  const [webhookUrl, setWebhookUrl] = createSignal('')
-  const [error, setError] = createSignal('')
-  const [submitting, setSubmitting] = createSignal(false)
-  const [nsidError, setNsidError] = createSignal('')
+  const [nsid, setNsid] = createSignal("");
+  const [webhookUrl, setWebhookUrl] = createSignal("");
+  const [error, setError] = createSignal("");
+  const [submitting, setSubmitting] = createSignal(false);
+  const [nsidError, setNsidError] = createSignal("");
 
-  const nsidRegex = /^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/
+  const nsidRegex = /^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/;
 
   function validateNsid() {
-    if (!nsid()) return
+    if (!nsid()) return;
     if (!nsidRegex.test(nsid())) {
-      setNsidError('Invalid NSID format (e.g., app.bsky.feed.post)')
-      return false
+      setNsidError("Invalid NSID format (e.g., app.bsky.feed.post)");
+      return false;
     }
-    setNsidError('')
-    return true
+    setNsidError("");
+    return true;
   }
 
   async function handleSubmit(e: SubmitEvent) {
-    e.preventDefault()
-    setError('')
+    e.preventDefault();
+    setError("");
 
-    if (!validateNsid()) return
+    if (!validateNsid()) return;
 
     if (!webhookUrl()) {
-      setError('Webhook URL is required')
-      return
+      setError("Webhook URL is required");
+      return;
     }
 
     // Basic URL validation
     try {
-      new URL(webhookUrl())
+      new URL(webhookUrl());
     } catch {
-      setError('Invalid webhook URL')
-      return
+      setError("Invalid webhook URL");
+      return;
     }
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
-      await createHookAction({ data: { nsid: nsid(), webhookUrl: webhookUrl() } })
-      props.onClose()
-      props.onSuccess()
+      await createHookAction({
+        data: { nsid: nsid(), webhookUrl: webhookUrl() },
+      });
+      props.onClose();
+      props.onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create hook')
+      setError(err instanceof Error ? err.message : "Failed to create hook");
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
@@ -219,7 +238,10 @@ function NewHookModal(props: { onClose: () => void; onSuccess: () => void }) {
       <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-bold">Add new hook</h2>
-          <button onClick={props.onClose} class="text-zinc-400 hover:text-zinc-600">
+          <button
+            onClick={props.onClose}
+            class="text-zinc-400 hover:text-zinc-600"
+          >
             ✕
           </button>
         </div>
@@ -236,7 +258,7 @@ function NewHookModal(props: { onClose: () => void; onSuccess: () => void }) {
               onInput={(e) => setNsid(e.currentTarget.value)}
               onBlur={validateNsid}
               placeholder="app.bsky.feed.post"
-              class={`w-full px-3 py-2 border rounded-md ${nsidError() ? 'border-red-500' : ''}`}
+              class={`w-full px-3 py-2 border rounded-md ${nsidError() ? "border-red-500" : ""}`}
               required
             />
             <Show when={nsidError()}>
@@ -276,11 +298,11 @@ function NewHookModal(props: { onClose: () => void; onSuccess: () => void }) {
               disabled={submitting()}
               class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
-              {submitting() ? 'Creating...' : 'Create hook'}
+              {submitting() ? "Creating..." : "Create hook"}
             </button>
           </div>
         </form>
       </div>
     </div>
-  )
+  );
 }
