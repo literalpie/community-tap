@@ -79,9 +79,7 @@ export default defineSchema({
     registeredBy: v.string(),
     registeredAt: v.number(),
     lastSeenAt: v.number(),
-    nsid: v.optional(v.string()),
   })
     .index("by_repo", ["repoDid"])
-    .index("by_registeredBy", ["registeredBy"])
-    .index("by_registeredBy_and_nsid", ["registeredBy", "nsid"]),
+    .index("by_registeredBy", ["registeredBy"]),
 });
