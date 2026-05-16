@@ -5,7 +5,7 @@ let _client: ReturnType<typeof setupConvex> | null = null;
 
 function getConvexClient() {
   if (!_client) {
-    const url = (import.meta as any).env.VITE_CONVEX_URL;
+    const url = import.meta.env.VITE_CONVEX_URL;
     if (!url) {
       console.error("missing envar VITE_CONVEX_URL");
     }

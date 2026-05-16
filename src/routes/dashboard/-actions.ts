@@ -47,8 +47,8 @@ export const createHookOnPDS = createServerFn({ method: "POST" })
       data === null ||
       !("nsid" in data) ||
       !("webhookUrl" in data) ||
-      typeof (data as any).nsid !== "string" ||
-      typeof (data as any).webhookUrl !== "string"
+      typeof data.nsid !== "string" ||
+      typeof data.webhookUrl !== "string"
     ) {
       throw new Error("Invalid input: nsid and webhookUrl are required");
     }
@@ -69,7 +69,7 @@ export const createHookOnPDS = createServerFn({ method: "POST" })
     const existingHooks = await convex.query(api.hooks.listByUser, {
       userId: did,
     });
-    const duplicate = existingHooks.find((h: any) => h.nsid === data.nsid);
+    const duplicate = existingHooks.find((h) => h.nsid === data.nsid);
     if (duplicate) {
       throw new Error(
         "You already have a hook for this NSID. Delete it first to change the webhook URL.",
@@ -130,7 +130,7 @@ export const deleteHookOnPDS = createServerFn({ method: "POST" })
       typeof data !== "object" ||
       data === null ||
       !("uri" in data) ||
-      typeof (data as any).uri !== "string"
+      typeof data.uri !== "string"
     ) {
       throw new Error("Invalid input: uri is required");
     }
@@ -181,7 +181,7 @@ export const syncHooksFromPDS = createServerFn({ method: "POST" }).handler(
     const convexHooks = await convex.query(api.hooks.listByUser, {
       userId: did,
     });
-    const convexUris = new Set(convexHooks.map((h: any) => h.recordUri));
+    const convexUris = new Set(convexHooks.map((h) => h.recordUri));
 
     let added = 0;
     let removed = 0;

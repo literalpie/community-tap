@@ -1,12 +1,12 @@
-import { createSignal, Show, For } from "solid-js";
-import { listHooks } from "~/routes/dashboard/-queries";
+import { Link } from "@tanstack/solid-router";
+import { createSignal, For, Show } from "solid-js";
+import { Route } from "~/routes/dashboard";
 import {
   createHookOnPDS as createHookAction,
   deleteHookOnPDS as deleteHookAction,
   syncHooksFromPDS as syncAction,
 } from "~/routes/dashboard/-actions";
-import { Route } from "~/routes/dashboard";
-import { Link } from "@tanstack/solid-router";
+import { listHooks } from "~/routes/dashboard/-queries";
 
 export default function DashboardPage() {
   const loaderData = Route.useLoaderData();
@@ -54,7 +54,7 @@ export default function DashboardPage() {
   }
 
   function truncateUrl(url: string, maxLen = 40) {
-    return url.length > maxLen ? url.slice(0, maxLen) + "..." : url;
+    return url.length > maxLen ? `${url.slice(0, maxLen)}...` : url;
   }
 
   function formatDate(ts: number) {
@@ -67,6 +67,7 @@ export default function DashboardPage() {
         <h1 class="text-2xl font-bold">Your hooks</h1>
         <div class="flex gap-3">
           <button
+            type="button"
             onClick={handleSync}
             disabled={loading()}
             class="px-4 py-2 border rounded-md hover:bg-zinc-50 disabled:opacity-50"
@@ -74,6 +75,7 @@ export default function DashboardPage() {
             {loading() ? "Syncing..." : "Sync from AT Proto"}
           </button>
           <button
+            type="button"
             onClick={() => setShowNewForm(true)}
             class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
@@ -95,6 +97,7 @@ export default function DashboardPage() {
         <div class="text-center py-12 border rounded-lg bg-zinc-50">
           <p class="text-zinc-600 mb-4">You don't have any hooks yet.</p>
           <button
+            type="button"
             onClick={() => setShowNewForm(true)}
             class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
@@ -157,6 +160,7 @@ export default function DashboardPage() {
                     </td>
                     <td class="px-4 py-3 text-right">
                       <button
+                        type="button"
                         onClick={() => handleDelete(hook.recordUri)}
                         class="text-sm text-red-600 hover:text-red-700"
                       >
@@ -239,6 +243,7 @@ function NewHookModal(props: { onClose: () => void; onSuccess: () => void }) {
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-bold">Add new hook</h2>
           <button
+            type="button"
             onClick={props.onClose}
             class="text-zinc-400 hover:text-zinc-600"
           >

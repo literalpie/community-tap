@@ -52,19 +52,20 @@ function HookDetailPage() {
           </span>
         </div>
 
-        <div class="mb-4">
-          <label class="text-sm font-medium text-zinc-600">Webhook URL</label>
-          <p class="text-sm font-mono text-zinc-800">
-            {loaderData().hook.webhookUrl}
-          </p>
-        </div>
-
-        <div>
-          <label class="text-sm font-medium text-zinc-600">Created</label>
-          <p class="text-sm text-zinc-800">
-            {formatTime(loaderData().hook.createdAt)}
-          </p>
-        </div>
+        <dl>
+          <div class="mb-4">
+            <dt class="text-sm font-medium text-zinc-600">Webhook URL</dt>
+            <dd class="text-sm font-mono text-zinc-800">
+              {loaderData().hook.webhookUrl}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-zinc-600">Created</dt>
+            <dd class="text-sm text-zinc-800">
+              {formatTime(loaderData().hook.createdAt)}
+            </dd>
+          </div>
+        </dl>
       </div>
 
       <div class="bg-white border rounded-lg p-6">
@@ -104,7 +105,7 @@ function HookDetailPage() {
                         {formatTime(event.timestamp)}
                       </td>
                       <td
-                        class="px-4 py-3 font-mono text-xs max-w-[150px] truncate"
+                        class="px-4 py-3 font-mono text-xs max-w-37.5 truncate"
                         title={event.repo}
                       >
                         {event.repo}

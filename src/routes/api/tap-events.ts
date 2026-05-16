@@ -4,7 +4,11 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
-const convex = new ConvexHttpClient(process.env.VITE_CONVEX_URL!);
+const convexUrl = process.env.VITE_CONVEX_URL;
+if (!convexUrl) {
+  throw new Error("VITE_CONVEX_URL is not set");
+}
+const convex = new ConvexHttpClient(convexUrl);
 
 async function handleHookRecordEvent(
   event: Extract<TapEvent, { type: "record" }>,

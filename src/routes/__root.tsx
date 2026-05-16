@@ -32,7 +32,7 @@ function RootComponent() {
   const data = Route.useLoaderData();
 
   return (
-    <html>
+    <html lang="en">
       <head>
         <HydrationScript />
         <HeadContent />

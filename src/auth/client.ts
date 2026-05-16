@@ -1,14 +1,14 @@
 import {
-  NodeOAuthClient,
+  buildAtprotoLoopbackClientMetadata,
   JoseKey,
   Keyset,
-  buildAtprotoLoopbackClientMetadata,
-  requestLocalLock,
+  NodeOAuthClient,
   type OAuthClientMetadataInput,
+  requestLocalLock,
 } from "@atproto/oauth-client-node";
 import { ConvexClient } from "convex/browser";
-import { api } from "../../convex/_generated/api";
 import { getPublicUrl } from "~/lib/getPublicUrl";
+import { api } from "../../convex/_generated/api";
 
 let _convexClient: ConvexClient | null = null;
 

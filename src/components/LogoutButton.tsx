@@ -17,6 +17,7 @@ export function LogoutButton() {
 
   return (
     <button
+      type="button"
       onClick={handleLogout}
       disabled={loading()}
       class="text-sm text-zinc-500 hover:text-zinc-700 disabled:opacity-50"

@@ -46,7 +46,7 @@ export const getHookById = createServerFn({ method: "GET" })
       typeof data !== "object" ||
       data === null ||
       !("hookId" in data) ||
-      typeof (data as any).hookId !== "string"
+      typeof data.hookId !== "string"
     ) {
       throw new Error("hookId is required");
     }
