@@ -2,11 +2,10 @@ import { Agent } from "@atproto/api";
 import { createServerFn } from "@tanstack/solid-start";
 import { getCookie } from "@tanstack/solid-start/server";
 import { ConvexHttpClient } from "convex/browser";
+import { requireConvexServerSecret } from "~/lib/utils";
 import { getOAuthClient } from "~/auth/client";
 import { createHookRecord, deleteHookRecord, listHookRecords } from "~/lib/pds";
 import { api } from "../../../convex/_generated/api";
-
-const SERVICE_ID = process.env.COMMUNITY_TAP_SERVICE_ID;
 
 function getConvexHttpClient(): ConvexHttpClient {
   const url = import.meta.env.VITE_CONVEX_URL;
@@ -55,6 +54,8 @@ export const createHookOnPDS = createServerFn({ method: "POST" })
     return data as { nsid: string; webhookUrl: string };
   })
   .handler(async (ctx) => {
+    const SERVICE_ID = process.env.COMMUNITY_TAP_SERVICE_ID;
+    const CONVEX_SERVER_SECRET = requireConvexServerSecret();
     const data = ctx.data;
     const { agent, did } = await getSessionAgent();
 
@@ -67,6 +68,7 @@ export const createHookOnPDS = createServerFn({ method: "POST" })
     // Check for duplicate in Convex
     const convex = getConvexHttpClient();
     const existingHooks = await convex.query(api.hooks.listByUser, {
+      serverSecret: CONVEX_SERVER_SECRET,
       userId: did,
     });
     const duplicate = existingHooks.find((h) => h.nsid === data.nsid);
@@ -98,6 +100,7 @@ export const createHookOnPDS = createServerFn({ method: "POST" })
     // Write to Convex
     try {
       await convex.mutation(api.hooks.upsert, {
+        serverSecret: CONVEX_SERVER_SECRET,
         userId: did,
         nsid: data.nsid,
         webhookUrl: data.webhookUrl,
@@ -137,6 +140,7 @@ export const deleteHookOnPDS = createServerFn({ method: "POST" })
     return data as { uri: string };
   })
   .handler(async (ctx) => {
+    const CONVEX_SERVER_SECRET = requireConvexServerSecret();
     const data = ctx.data;
     const { agent } = await getSessionAgent();
 
@@ -155,6 +159,7 @@ export const deleteHookOnPDS = createServerFn({ method: "POST" })
     try {
       const convex = getConvexHttpClient();
       await convex.mutation(api.hooks.deleteByRecordUri, {
+        serverSecret: CONVEX_SERVER_SECRET,
         recordUri: data.uri,
       });
     } catch (convexErr) {
@@ -167,6 +172,8 @@ export const deleteHookOnPDS = createServerFn({ method: "POST" })
 
 export const syncHooksFromPDS = createServerFn({ method: "POST" }).handler(
   async () => {
+    const SERVICE_ID = process.env.COMMUNITY_TAP_SERVICE_ID;
+    const CONVEX_SERVER_SECRET = requireConvexServerSecret();
     const { agent, did } = await getSessionAgent();
     const convex = getConvexHttpClient();
 
@@ -179,6 +186,7 @@ export const syncHooksFromPDS = createServerFn({ method: "POST" }).handler(
 
     // Get Convex records
     const convexHooks = await convex.query(api.hooks.listByUser, {
+      serverSecret: CONVEX_SERVER_SECRET,
       userId: did,
     });
     const convexUris = new Set(convexHooks.map((h) => h.recordUri));
@@ -188,6 +196,7 @@ export const syncHooksFromPDS = createServerFn({ method: "POST" }).handler(
       .filter((record) => !convexUris.has(record.uri))
       .map((record) =>
         convex.mutation(api.hooks.upsert, {
+          serverSecret: CONVEX_SERVER_SECRET,
           userId: did,
           nsid: record.value.nsid,
           webhookUrl: record.value.webhookUrl,
@@ -204,6 +213,7 @@ export const syncHooksFromPDS = createServerFn({ method: "POST" }).handler(
       .filter((hook) => !pdsUris.has(hook.recordUri))
       .map((hook) =>
         convex.mutation(api.hooks.deleteByRecordUri, {
+          serverSecret: CONVEX_SERVER_SECRET,
           recordUri: hook.recordUri,
         }),
       );

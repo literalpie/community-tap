@@ -1,13 +1,8 @@
 import { Tap } from "@atproto/tap";
 import { createFileRoute } from "@tanstack/solid-router";
 import { ConvexHttpClient } from "convex/browser";
+import { requireConvexServerSecret } from "~/lib/utils";
 import { api } from "../../../../convex/_generated/api";
-
-const convexUrl = process.env.VITE_CONVEX_URL;
-if (!convexUrl) {
-  throw new Error("VITE_CONVEX_URL is not set");
-}
-const convex = new ConvexHttpClient(convexUrl);
 
 // Real Tap client - needs Node.js, so we import dynamically in the handler
 async function getTapClient() {
@@ -20,6 +15,13 @@ export const Route = createFileRoute("/api/hooks/addRepo")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const convexUrl = process.env.VITE_CONVEX_URL;
+        if (!convexUrl) {
+          throw new Error("VITE_CONVEX_URL is not set");
+        }
+        const CONVEX_SERVER_SECRET = requireConvexServerSecret();
+        const convex = new ConvexHttpClient(convexUrl);
+
         try {
           const body = await request.json();
           const { repoDid, registeredBy } = body;
@@ -32,7 +34,9 @@ export const Route = createFileRoute("/api/hooks/addRepo")({
           }
 
           // Check if any hooks exist for this repo
-          const allHooks = await convex.query(api.hooks.listAll);
+          const allHooks = await convex.query(api.hooks.listAll, {
+            serverSecret: CONVEX_SERVER_SECRET,
+          });
           const hooksForRepo = allHooks.filter((h) => h.isActive);
 
           if (hooksForRepo.length === 0) {
@@ -54,6 +58,7 @@ export const Route = createFileRoute("/api/hooks/addRepo")({
 
           // Store registration in Convex
           await convex.mutation(api.repos.registerRepo, {
+            serverSecret: CONVEX_SERVER_SECRET,
             repoDid,
             registeredBy: registeredBy || "unknown",
           });

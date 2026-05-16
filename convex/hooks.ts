@@ -1,9 +1,15 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireServerSecret } from "./helpers";
 
 export const listByUser = query({
-  args: { userId: v.string() },
+  args: {
+    serverSecret: v.string(),
+    userId: v.string(),
+  },
   handler: async (ctx, args) => {
+    requireServerSecret(args.serverSecret);
+
     return await ctx.db
       .query("hooks")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
@@ -13,21 +19,29 @@ export const listByUser = query({
 });
 
 export const listAll = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { serverSecret: v.string() },
+  handler: async (ctx, args) => {
+    requireServerSecret(args.serverSecret);
+
     return await ctx.db.query("hooks").collect();
   },
 });
 
 export const getById = query({
-  args: { id: v.id("hooks") },
+  args: {
+    serverSecret: v.string(),
+    id: v.id("hooks"),
+  },
   handler: async (ctx, args) => {
+    requireServerSecret(args.serverSecret);
+
     return await ctx.db.get(args.id);
   },
 });
 
 export const upsert = mutation({
   args: {
+    serverSecret: v.string(),
     userId: v.string(),
     nsid: v.string(),
     webhookUrl: v.string(),
@@ -36,6 +50,8 @@ export const upsert = mutation({
     createdAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    requireServerSecret(args.serverSecret);
+
     const existing = await ctx.db
       .query("hooks")
       .withIndex("by_recordUri", (q) => q.eq("recordUri", args.recordUri))
@@ -63,8 +79,13 @@ export const upsert = mutation({
 });
 
 export const deleteByRecordUri = mutation({
-  args: { recordUri: v.string() },
+  args: {
+    serverSecret: v.string(),
+    recordUri: v.string(),
+  },
   handler: async (ctx, args) => {
+    requireServerSecret(args.serverSecret);
+
     const existing = await ctx.db
       .query("hooks")
       .withIndex("by_recordUri", (q) => q.eq("recordUri", args.recordUri))

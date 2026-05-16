@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/solid-start";
 import { getCookie } from "@tanstack/solid-start/server";
 import { ConvexHttpClient } from "convex/browser";
+import { requireConvexServerSecret } from "~/lib/utils";
 import { getOAuthClient } from "~/auth/client";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
@@ -29,9 +30,13 @@ async function getAuthenticatedDid(): Promise<string> {
 }
 
 export const listHooks = createServerFn({ method: "GET" }).handler(async () => {
+  const CONVEX_SERVER_SECRET = requireConvexServerSecret();
   const did = await getAuthenticatedDid();
   const convex = getConvexHttpClient();
-  const hooks = await convex.query(api.hooks.listByUser, { userId: did });
+  const hooks = await convex.query(api.hooks.listByUser, {
+    serverSecret: CONVEX_SERVER_SECRET,
+    userId: did,
+  });
   return { did, hooks: hooks as Doc<"hooks">[] };
 });
 
@@ -53,14 +58,19 @@ export const getHookById = createServerFn({ method: "GET" })
     return data as { hookId: string };
   })
   .handler(async (ctx): Promise<GetHookResult> => {
+    const CONVEX_SERVER_SECRET = requireConvexServerSecret();
     const did = await getAuthenticatedDid();
     const convex = getConvexHttpClient();
     const hookIdTyped = ctx.data.hookId as Id<"hooks">;
-    const hook = await convex.query(api.hooks.getById, { id: hookIdTyped });
+    const hook = await convex.query(api.hooks.getById, {
+      serverSecret: CONVEX_SERVER_SECRET,
+      id: hookIdTyped,
+    });
     if (!hook || hook.userId !== did) {
       throw new Error("Hook not found");
     }
     const events = await convex.query(api.events.getEventsForHook, {
+      serverSecret: CONVEX_SERVER_SECRET,
       hookId: hookIdTyped,
       limit: 50,
     });

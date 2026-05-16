@@ -1,17 +1,14 @@
 import { assureAdminAuth, parseTapEvent, type TapEvent } from "@atproto/tap";
 import { createFileRoute } from "@tanstack/solid-router";
 import { ConvexHttpClient } from "convex/browser";
+import { requireConvexServerSecret } from "~/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
-const convexUrl = process.env.VITE_CONVEX_URL;
-if (!convexUrl) {
-  throw new Error("VITE_CONVEX_URL is not set");
-}
-const convex = new ConvexHttpClient(convexUrl);
-
 async function handleHookRecordEvent(
   event: Extract<TapEvent, { type: "record" }>,
+  convex: ConvexHttpClient,
+  CONVEX_SERVER_SECRET: string,
 ): Promise<Response> {
   console.log("hook record event:", {
     did: event.did,
@@ -23,6 +20,7 @@ async function handleHookRecordEvent(
 
   if (event.action === "delete") {
     const removed = await convex.mutation(api.hooks.deleteByRecordUri, {
+      serverSecret: CONVEX_SERVER_SECRET,
       recordUri,
     });
     console.log(
@@ -75,9 +73,13 @@ async function handleHookRecordEvent(
 
   const userId = event.did;
 
-  const existingUser = await convex.query(api.users.getByDid, { did: userId });
+  const existingUser = await convex.query(api.users.getByDid, {
+    serverSecret: CONVEX_SERVER_SECRET,
+    did: userId,
+  });
   if (!existingUser) {
     await convex.mutation(api.users.upsert, {
+      serverSecret: CONVEX_SERVER_SECRET,
       did: userId,
       handle: userId,
       lastSeen: Date.now(),
@@ -85,6 +87,7 @@ async function handleHookRecordEvent(
   }
 
   const hookId = await convex.mutation(api.hooks.upsert, {
+    serverSecret: CONVEX_SERVER_SECRET,
     userId,
     nsid,
     webhookUrl,
@@ -105,10 +108,14 @@ async function handleHookRecordEvent(
 async function deliverToMatchingHooks(
   event: Extract<TapEvent, { type: "record" }>,
   rawEvent: unknown,
+  convex: ConvexHttpClient,
+  CONVEX_SERVER_SECRET: string,
 ): Promise<Response> {
   const collection = event.collection;
 
-  const allHooks = await convex.query(api.hooks.listAll);
+  const allHooks = await convex.query(api.hooks.listAll, {
+    serverSecret: CONVEX_SERVER_SECRET,
+  });
   const matchingHooks = allHooks.filter(
     (h) => h.nsid === collection && h.isActive,
   );
@@ -162,6 +169,7 @@ async function deliverToMatchingHooks(
       }
 
       const logPayload = {
+        serverSecret: CONVEX_SERVER_SECRET,
         hookId: hook._id,
         userId: hook.userId,
         nsid: hook.nsid,
@@ -210,6 +218,13 @@ export const Route = createFileRoute("/api/tap-events")({
         });
       },
       POST: async ({ request }) => {
+        const convexUrl = process.env.VITE_CONVEX_URL;
+        if (!convexUrl) {
+          throw new Error("VITE_CONVEX_URL is not set");
+        }
+        const CONVEX_SERVER_SECRET = requireConvexServerSecret();
+        const convex = new ConvexHttpClient(convexUrl);
+
         console.log("Received Tap event");
 
         const tapPassword = process.env.TAP_ADMIN_PASSWORD;
@@ -247,10 +262,19 @@ export const Route = createFileRoute("/api/tap-events")({
           >;
 
           if (event.collection === "com.communitytap.hook") {
-            return await handleHookRecordEvent(event);
+            return await handleHookRecordEvent(
+              event,
+              convex,
+              CONVEX_SERVER_SECRET,
+            );
           }
 
-          return await deliverToMatchingHooks(event, rawEvent);
+          return await deliverToMatchingHooks(
+            event,
+            rawEvent,
+            convex,
+            CONVEX_SERVER_SECRET,
+          );
         } catch (error) {
           console.error("Error handling tap event:", error);
           return new Response(
