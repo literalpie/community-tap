@@ -29,8 +29,6 @@ function HookDetailPage() {
   const loaderData = Route.useLoaderData();
   const params = Route.useParams();
 
-  const initialEventIds = new Set(loaderData().events.map((e) => e._id));
-
   const { data } = useQuery(
     api.hooks.getHookWithEvents,
     () => ({
@@ -136,9 +134,7 @@ function HookDetailPage() {
               <tbody>
                 <For each={events()}>
                   {(event) => (
-                    <tr
-                      class={initialEventIds.has(event._id) ? "" : "animate-fade-in"}
-                    >
+                    <tr>
                       <td class="px-4 py-3 whitespace-nowrap">
                         {formatTime(event.timestamp)}
                       </td>
