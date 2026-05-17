@@ -11,8 +11,8 @@ import "@fontsource/inter/400.css";
 import { Suspense } from "solid-js";
 import { HydrationScript } from "solid-js/web";
 import { LogoutButton } from "~/components/LogoutButton";
-import { getSessionFn } from "~/routes/-session";
 import AppConvexProvider from "~/integrations/convex/provider";
+import { getSessionFn } from "~/routes/-session";
 import styleCss from "../styles.css?url";
 
 export const Route = createRootRouteWithContext<{
@@ -60,7 +60,10 @@ function RootComponent() {
                     <LogoutButton />
                   </>
                 ) : (
-                  <a href="/login" class="text-sm text-blue-600 hover:underline">
+                  <a
+                    href="/login"
+                    class="text-sm text-blue-600 hover:underline"
+                  >
                     Sign in
                   </a>
                 )}
