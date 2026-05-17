@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { requireServerSecret } from "./helpers";
 
 const MS_PER_MINUTE = 60_000;
@@ -116,28 +117,20 @@ export const reserveForDelivery = mutation({
       .withIndex("by_userId_and_pausedAt", (q) => q.eq("userId", userId))
       .collect();
 
-    for (const hook of userHooks) {
-      if (hook.pausedAt && hook.pausedReason && hook.pausedReason !== "admin") {
-        let shouldResume = false;
-        if (
-          hook.pausedReason === "daily_limit" &&
-          hook.pausedAt < dailyWindow
-        ) {
-          shouldResume = true;
-        } else if (
-          hook.pausedReason === "minute_limit" &&
-          hook.pausedAt < minuteWindow
-        ) {
-          shouldResume = true;
-        }
-        if (shouldResume) {
-          await ctx.db.patch(hook._id, {
-            pausedAt: undefined,
-            pausedReason: undefined,
-          });
-        }
-      }
-    }
+    await Promise.all(
+      userHooks
+        .filter(
+          (h) =>
+            h.pausedAt &&
+            h.pausedReason &&
+            h.pausedReason !== "admin" &&
+            ((h.pausedReason === "daily_limit" && h.pausedAt < dailyWindow) ||
+              (h.pausedReason === "minute_limit" && h.pausedAt < minuteWindow)),
+        )
+        .map((h) =>
+          ctx.db.patch(h._id, { pausedAt: undefined, pausedReason: undefined }),
+        ),
+    );
 
     const minuteEvents = await ctx.db
       .query("events")
@@ -154,51 +147,51 @@ export const reserveForDelivery = mutation({
       .take(DAILY_LIMIT);
 
     if (minuteEvents.length >= MINUTE_LIMIT) {
-      for (const hook of userHooks) {
-        if (hook.isActive && !hook.pausedAt) {
-          await ctx.db.patch(hook._id, {
-            pausedAt: now,
-            pausedReason: "minute_limit",
-          });
-        }
-      }
+      await Promise.all(
+        userHooks
+          .filter((h) => h.isActive && !h.pausedAt)
+          .map((h) =>
+            ctx.db.patch(h._id, { pausedAt: now, pausedReason: "minute_limit" }),
+          ),
+      );
       return { allowed: false, reason: "minute_limit" as const };
     }
 
     if (dailyEvents.length >= DAILY_LIMIT) {
-      for (const hook of userHooks) {
-        if (hook.isActive && !hook.pausedAt) {
-          await ctx.db.patch(hook._id, {
-            pausedAt: now,
-            pausedReason: "daily_limit",
-          });
-        }
-      }
+      await Promise.all(
+        userHooks
+          .filter((h) => h.isActive && !h.pausedAt)
+          .map((h) =>
+            ctx.db.patch(h._id, { pausedAt: now, pausedReason: "daily_limit" }),
+          ),
+      );
       return { allowed: false, reason: "daily_limit" as const };
     }
 
-    const eventIds: string[] = [];
-    for (const hookId of hookIds) {
-      const hook = userHooks.find((h) => h._id === hookId);
-      if (!hook) continue;
+    const eventIds = (
+      await Promise.all(
+        hookIds.map(async (hookId) => {
+          const hook = userHooks.find((h) => h._id === hookId);
+          if (!hook) return null;
 
-      const eventId = await ctx.db.insert("events", {
-        hookId,
-        userId,
-        nsid: hook.nsid,
-        repo: event.repo,
-        collection: event.collection,
-        rkey: event.rkey,
-        action: event.action,
-        webhookUrl: hook.webhookUrl,
-        requestBody: event.requestBody,
-        durationMs: 0,
-        success: false,
-        deliveryStatus: "reserved",
-        timestamp: now,
-      });
-      eventIds.push(eventId);
-    }
+          return await ctx.db.insert("events", {
+            hookId,
+            userId,
+            nsid: hook.nsid,
+            repo: event.repo,
+            collection: event.collection,
+            rkey: event.rkey,
+            action: event.action,
+            webhookUrl: hook.webhookUrl,
+            requestBody: event.requestBody,
+            durationMs: 0,
+            success: false,
+            deliveryStatus: "reserved",
+            timestamp: now,
+          });
+        }),
+      )
+    ).filter((id): id is Id<"events"> => id !== null);
 
     return { allowed: true, eventIds };
   },

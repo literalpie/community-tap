@@ -141,48 +141,67 @@ async function deliverToMatchingHooks(
     }
   }
 
-  let totalDelivered = 0;
+  const reservationResults = await Promise.all(
+    [...byUser.entries()].map(async ([userId, hooks]) => {
+      const hookIds = hooks.map((h) => h._id);
 
-  for (const [userId, hooks] of byUser) {
-    const hookIds = hooks.map((h) => h._id);
-
-    const reservation = await convex.mutation(api.events.reserveForDelivery, {
-      userId,
-      hookIds,
-      event: {
-        repo: event.did,
-        collection: event.collection,
-        rkey: event.rkey,
-        action,
-        requestBody: rawBody,
-      },
-      serverSecret: CONVEX_SERVER_SECRET,
-    });
-
-    if (!reservation.allowed) {
-      console.log(
-        `Skipping deliveries for user ${userId}: ${reservation.reason}`,
+      const reservation = await convex.mutation(
+        api.events.reserveForDelivery,
+        {
+          userId,
+          hookIds,
+          event: {
+            repo: event.did,
+            collection: event.collection,
+            rkey: event.rkey,
+            action,
+            requestBody: rawBody,
+          },
+          serverSecret: CONVEX_SERVER_SECRET,
+        },
       );
-      continue;
-    }
 
-    const { eventIds } = reservation as { eventIds: string[] };
-    const eventIdByHookId = new Map<string, Id<"events">>();
-    for (let i = 0; i < hookIds.length; i++) {
-      eventIdByHookId.set(hookIds[i], eventIds[i] as Id<"events">);
-    }
+      if (!reservation.allowed) {
+        console.log(
+          `Skipping deliveries for user ${userId}: ${reservation.reason}`,
+        );
+        return null;
+      }
 
-    const userInfo = await convex.query(api.users.getDeliveryInfo, {
-      did: userId,
-      serverSecret: CONVEX_SERVER_SECRET,
-    });
+      const { eventIds } = reservation as { eventIds: string[] };
+      const eventIdByHookId = new Map<string, Id<"events">>();
+      for (let i = 0; i < hookIds.length; i++) {
+        eventIdByHookId.set(hookIds[i], eventIds[i] as Id<"events">);
+      }
 
-    const deliverableHooks = hooks.filter((h) => h.pausedReason !== "admin");
+      return { userId, hooks, eventIdByHookId };
+    }),
+  );
 
-    await Promise.allSettled(
-      deliverableHooks.map(async (hook) => {
+  const succeeded = reservationResults.filter(
+    (r): r is NonNullable<typeof r> => r !== null,
+  );
+
+  const userInfoEntries = await Promise.all(
+    succeeded.map(async ({ userId }) => {
+      const userInfo = await convex.query(api.users.getDeliveryInfo, {
+        did: userId,
+        serverSecret: CONVEX_SERVER_SECRET,
+      });
+      return { userId, userInfo };
+    }),
+  );
+
+  const userInfoById = new Map(userInfoEntries.map((e) => [e.userId, e.userInfo]));
+
+  const deliveryResults = await Promise.allSettled(
+    succeeded.flatMap(({ userId, hooks, eventIdByHookId }) => {
+      const userInfo = userInfoById.get(userId);
+      const deliverable = hooks.filter((h) => h.pausedReason !== "admin");
+
+      return deliverable.map(async (hook) => {
         const eventId = eventIdByHookId.get(hook._id);
-        if (!eventId) return;
+        if (!eventId) return false;
 
         const startTime = Date.now();
         const controller = new AbortController();
@@ -221,7 +240,7 @@ async function deliverToMatchingHooks(
             serverSecret: CONVEX_SERVER_SECRET,
           });
 
-          if (response.ok) totalDelivered++;
+          return response.ok;
         } catch (error) {
           clearTimeout(timeout);
           const duration = Date.now() - startTime;
@@ -235,10 +254,16 @@ async function deliverToMatchingHooks(
             error: errorMsg,
             serverSecret: CONVEX_SERVER_SECRET,
           });
+
+          return false;
         }
-      }),
-    );
-  }
+      });
+    }),
+  );
+
+  const totalDelivered = deliveryResults.filter(
+    (r) => r.status === "fulfilled" && r.value === true,
+  ).length;
 
   return new Response(
     JSON.stringify({

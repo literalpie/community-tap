@@ -47,21 +47,23 @@ async function seedEvents(
   timestamp: number,
 ) {
   await t.run(async (ctx) => {
-    for (let i = 0; i < count; i++) {
-      await ctx.db.insert("events", {
-        hookId,
-        userId: USER_ID,
-        nsid: NSID,
-        repo: "did:plc:test",
-        collection: "app.bsky.feed.post",
-        action: "create",
-        webhookUrl: "https://example.com/hook",
-        requestBody: JSON.stringify({ test: true }),
-        durationMs: 0,
-        success: false,
-        timestamp,
-      });
-    }
+    await Promise.all(
+      Array.from({ length: count }, () =>
+        ctx.db.insert("events", {
+          hookId,
+          userId: USER_ID,
+          nsid: NSID,
+          repo: "did:plc:test",
+          collection: "app.bsky.feed.post",
+          action: "create",
+          webhookUrl: "https://example.com/hook",
+          requestBody: JSON.stringify({ test: true }),
+          durationMs: 0,
+          success: false,
+          timestamp,
+        }),
+      ),
+    );
   });
 }
 
@@ -339,3 +341,4 @@ describe("patchDeliveryResult", () => {
     ).rejects.toThrow("Invalid server secret");
   });
 });
+
