@@ -341,4 +341,3 @@ describe("patchDeliveryResult", () => {
     ).rejects.toThrow("Invalid server secret");
   });
 });
-

@@ -41,19 +41,32 @@ function HookDetailPage() {
               {loaderData().hook.recordUri}
             </p>
           </div>
-          <Show when={loaderData().hook.pausedAt && loaderData().hook.pausedReason === "admin"}>
+          <Show
+            when={
+              loaderData().hook.pausedAt &&
+              loaderData().hook.pausedReason === "admin"
+            }
+          >
             <span class="inline-flex px-3 py-1 text-sm rounded-full bg-red-100 text-red-700">
               Admin Paused
             </span>
           </Show>
-          <Show when={loaderData().hook.pausedAt && loaderData().hook.pausedReason && loaderData().hook.pausedReason !== "admin"}>
+          <Show
+            when={
+              loaderData().hook.pausedAt &&
+              loaderData().hook.pausedReason &&
+              loaderData().hook.pausedReason !== "admin"
+            }
+          >
             <span class="inline-flex px-3 py-1 text-sm rounded-full bg-amber-100 text-amber-700">
               {loaderData().hook.pausedReason === "daily_limit"
                 ? "Paused — Daily Limit"
                 : "Paused — Minute Limit"}
             </span>
           </Show>
-          <Show when={!loaderData().hook.pausedAt && loaderData().hook.isActive}>
+          <Show
+            when={!loaderData().hook.pausedAt && loaderData().hook.isActive}
+          >
             <span class="inline-flex px-3 py-1 text-sm rounded-full bg-green-100 text-green-700">
               Active
             </span>

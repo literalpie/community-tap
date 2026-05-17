@@ -151,7 +151,10 @@ export const reserveForDelivery = mutation({
         userHooks
           .filter((h) => h.isActive && !h.pausedAt)
           .map((h) =>
-            ctx.db.patch(h._id, { pausedAt: now, pausedReason: "minute_limit" }),
+            ctx.db.patch(h._id, {
+              pausedAt: now,
+              pausedReason: "minute_limit",
+            }),
           ),
       );
       return { allowed: false, reason: "minute_limit" as const };

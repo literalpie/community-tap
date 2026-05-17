@@ -7,7 +7,6 @@ export const registerRepo = mutation({
     serverSecret: v.string(),
     repoDid: v.string(),
     registeredBy: v.string(),
-    nsid: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     requireServerSecret(args.serverSecret);
@@ -27,7 +26,6 @@ export const registerRepo = mutation({
     return await ctx.db.insert("repoRegistrations", {
       repoDid: args.repoDid,
       registeredBy: args.registeredBy,
-      nsid: args.nsid,
       registeredAt: Date.now(),
       lastSeenAt: Date.now(),
     });

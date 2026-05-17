@@ -145,21 +145,18 @@ async function deliverToMatchingHooks(
     [...byUser.entries()].map(async ([userId, hooks]) => {
       const hookIds = hooks.map((h) => h._id);
 
-      const reservation = await convex.mutation(
-        api.events.reserveForDelivery,
-        {
-          userId,
-          hookIds,
-          event: {
-            repo: event.did,
-            collection: event.collection,
-            rkey: event.rkey,
-            action,
-            requestBody: rawBody,
-          },
-          serverSecret: CONVEX_SERVER_SECRET,
+      const reservation = await convex.mutation(api.events.reserveForDelivery, {
+        userId,
+        hookIds,
+        event: {
+          repo: event.did,
+          collection: event.collection,
+          rkey: event.rkey,
+          action,
+          requestBody: rawBody,
         },
-      );
+        serverSecret: CONVEX_SERVER_SECRET,
+      });
 
       if (!reservation.allowed) {
         console.log(
@@ -192,7 +189,9 @@ async function deliverToMatchingHooks(
     }),
   );
 
-  const userInfoById = new Map(userInfoEntries.map((e) => [e.userId, e.userInfo]));
+  const userInfoById = new Map(
+    userInfoEntries.map((e) => [e.userId, e.userInfo]),
+  );
 
   const deliveryResults = await Promise.allSettled(
     succeeded.flatMap(({ userId, hooks, eventIdByHookId }) => {

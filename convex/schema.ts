@@ -77,11 +77,9 @@ export default defineSchema({
   repoRegistrations: defineTable({
     repoDid: v.string(),
     registeredBy: v.string(),
-    nsid: v.optional(v.string()),
     registeredAt: v.number(),
     lastSeenAt: v.number(),
   })
     .index("by_repo", ["repoDid"])
-    .index("by_registeredBy", ["registeredBy"])
-    .index("by_registeredBy_and_nsid", ["registeredBy", "nsid"]),
+    .index("by_registeredBy", ["registeredBy"]),
 });
