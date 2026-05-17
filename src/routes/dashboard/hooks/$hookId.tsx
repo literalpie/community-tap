@@ -1,7 +1,10 @@
 import { createFileRoute, redirect } from "@tanstack/solid-router";
 import { For, Show } from "solid-js";
+import { useQuery } from "convex-solidjs";
 import { getSessionFn } from "~/routes/-session";
 import { getHookById } from "~/routes/dashboard/-queries";
+import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
 
 export const Route = createFileRoute("/dashboard/hooks/$hookId")({
   component: HookDetailPage,
@@ -24,6 +27,19 @@ function formatTime(ts: number) {
 
 function HookDetailPage() {
   const loaderData = Route.useLoaderData();
+  const params = Route.useParams();
+
+  const { data } = useQuery(
+    api.hooks.getHookWithEvents,
+    () => ({ userId: loaderData().did, hookId: params().hookId as Id<"hooks"> }),
+    () => ({
+      enabled: !!loaderData().did,
+      initialData: { hook: loaderData().hook, events: loaderData().events },
+    }),
+  );
+
+  const hook = () => data()?.hook ?? loaderData().hook;
+  const events = () => data()?.events ?? loaderData().events;
 
   return (
     <div class="container mx-auto px-4 py-8">
@@ -36,42 +52,33 @@ function HookDetailPage() {
       <div class="bg-white border rounded-lg p-6 mb-8">
         <div class="flex justify-between items-start mb-4">
           <div>
-            <h1 class="text-2xl font-bold mb-2">{loaderData().hook.nsid}</h1>
-            <p class="text-zinc-600 text-sm font-mono">
-              {loaderData().hook.recordUri}
-            </p>
+            <h1 class="text-2xl font-bold mb-2">{hook().nsid}</h1>
+            <p class="text-zinc-600 text-sm font-mono">{hook().recordUri}</p>
           </div>
-          <Show
-            when={
-              loaderData().hook.pausedAt &&
-              loaderData().hook.pausedReason === "admin"
-            }
-          >
+          <Show when={hook().pausedAt && hook().pausedReason === "admin"}>
             <span class="inline-flex px-3 py-1 text-sm rounded-full bg-red-100 text-red-700">
               Admin Paused
             </span>
           </Show>
           <Show
             when={
-              loaderData().hook.pausedAt &&
-              loaderData().hook.pausedReason &&
-              loaderData().hook.pausedReason !== "admin"
+              hook().pausedAt &&
+              hook().pausedReason &&
+              hook().pausedReason !== "admin"
             }
           >
             <span class="inline-flex px-3 py-1 text-sm rounded-full bg-amber-100 text-amber-700">
-              {loaderData().hook.pausedReason === "daily_limit"
+              {hook().pausedReason === "daily_limit"
                 ? "Paused — Daily Limit"
                 : "Paused — Minute Limit"}
             </span>
           </Show>
-          <Show
-            when={!loaderData().hook.pausedAt && loaderData().hook.isActive}
-          >
+          <Show when={!hook().pausedAt && hook().isActive}>
             <span class="inline-flex px-3 py-1 text-sm rounded-full bg-green-100 text-green-700">
               Active
             </span>
           </Show>
-          <Show when={!loaderData().hook.isActive}>
+          <Show when={!hook().isActive}>
             <span class="inline-flex px-3 py-1 text-sm rounded-full bg-zinc-100 text-zinc-600">
               Inactive
             </span>
@@ -82,13 +89,13 @@ function HookDetailPage() {
           <div class="mb-4">
             <dt class="text-sm font-medium text-zinc-600">Webhook URL</dt>
             <dd class="text-sm font-mono text-zinc-800">
-              {loaderData().hook.webhookUrl}
+              {hook().webhookUrl}
             </dd>
           </div>
           <div>
             <dt class="text-sm font-medium text-zinc-600">Created</dt>
             <dd class="text-sm text-zinc-800">
-              {formatTime(loaderData().hook.createdAt)}
+              {formatTime(hook().createdAt)}
             </dd>
           </div>
         </dl>
@@ -97,11 +104,11 @@ function HookDetailPage() {
       <div class="bg-white border rounded-lg p-6">
         <h2 class="text-lg font-semibold mb-4">Recent Events</h2>
 
-        <Show when={loaderData().events.length === 0}>
+        <Show when={events().length === 0}>
           <p class="text-zinc-500 text-center py-8">No events received yet.</p>
         </Show>
 
-        <Show when={loaderData().events.length > 0}>
+        <Show when={events().length > 0}>
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead class="bg-zinc-50 border-b">
@@ -124,7 +131,7 @@ function HookDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                <For each={loaderData().events}>
+                <For each={events()}>
                   {(event) => (
                     <tr class={event.success ? "" : "bg-red-50"}>
                       <td class="px-4 py-3 whitespace-nowrap">

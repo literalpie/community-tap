@@ -12,6 +12,7 @@ import { Suspense } from "solid-js";
 import { HydrationScript } from "solid-js/web";
 import { LogoutButton } from "~/components/LogoutButton";
 import { getSessionFn } from "~/routes/-session";
+import AppConvexProvider from "~/integrations/convex/provider";
 import styleCss from "../styles.css?url";
 
 export const Route = createRootRouteWithContext<{
@@ -38,38 +39,40 @@ function RootComponent() {
         <HeadContent />
       </head>
       <body>
-        <header class="border-b">
-          <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <a href="/" class="text-xl font-bold">
-              Community Tap
-            </a>
-            <div class="flex items-center gap-4">
-              {data().session ? (
-                <>
-                  <a
-                    href="/dashboard"
-                    class="text-sm text-blue-600 hover:underline"
-                  >
-                    Dashboard
+        <AppConvexProvider>
+          <header class="border-b">
+            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+              <a href="/" class="text-xl font-bold">
+                Community Tap
+              </a>
+              <div class="flex items-center gap-4">
+                {data().session ? (
+                  <>
+                    <a
+                      href="/dashboard"
+                      class="text-sm text-blue-600 hover:underline"
+                    >
+                      Dashboard
+                    </a>
+                    <span class="text-sm text-zinc-600">
+                      {data().session?.did}
+                    </span>
+                    <LogoutButton />
+                  </>
+                ) : (
+                  <a href="/login" class="text-sm text-blue-600 hover:underline">
+                    Sign in
                   </a>
-                  <span class="text-sm text-zinc-600">
-                    {data().session?.did}
-                  </span>
-                  <LogoutButton />
-                </>
-              ) : (
-                <a href="/login" class="text-sm text-blue-600 hover:underline">
-                  Sign in
-                </a>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        </header>
-        <Suspense>
-          <Outlet />
-          <TanStackRouterDevtools />
-        </Suspense>
-        <Scripts />
+          </header>
+          <Suspense>
+            <Outlet />
+            <TanStackRouterDevtools />
+          </Suspense>
+          <Scripts />
+        </AppConvexProvider>
       </body>
     </html>
   );

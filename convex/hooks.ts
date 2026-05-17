@@ -49,6 +49,23 @@ export const getById = query({
   },
 });
 
+export const getHookWithEvents = query({
+  args: {
+    userId: v.string(),
+    hookId: v.id("hooks"),
+  },
+  handler: async (ctx, args) => {
+    const hook = await ctx.db.get(args.hookId);
+    if (!hook || hook.userId !== args.userId) return null;
+    const events = await ctx.db
+      .query("events")
+      .withIndex("by_hook", (q) => q.eq("hookId", args.hookId))
+      .order("desc")
+      .take(50);
+    return { hook, events };
+  },
+});
+
 export const upsert = mutation({
   args: {
     serverSecret: v.string(),
