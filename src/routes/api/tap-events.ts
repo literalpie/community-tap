@@ -177,9 +177,7 @@ async function deliverToMatchingHooks(
       serverSecret: CONVEX_SERVER_SECRET,
     });
 
-    const deliverableHooks = hooks.filter(
-      (h) => h.pausedReason !== "admin",
-    );
+    const deliverableHooks = hooks.filter((h) => h.pausedReason !== "admin");
 
     await Promise.allSettled(
       deliverableHooks.map(async (hook) => {

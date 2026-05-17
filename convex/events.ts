@@ -1,6 +1,9 @@
-import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 import { requireServerSecret } from "./helpers";
+
+const MS_PER_MINUTE = 60_000;
+const MS_PER_DAY = 86_400_000;
 
 export const logEvent = mutation({
   args: {
@@ -105,8 +108,8 @@ export const reserveForDelivery = mutation({
     const MINUTE_LIMIT = 50;
 
     const now = Date.now();
-    const dailyWindow = Math.floor(now / 86400000) * 86400000;
-    const minuteWindow = Math.floor(now / 60000) * 60000;
+    const dailyWindow = Math.floor(now / MS_PER_DAY) * MS_PER_DAY;
+    const minuteWindow = Math.floor(now / MS_PER_MINUTE) * MS_PER_MINUTE;
 
     const userHooks = await ctx.db
       .query("hooks")
@@ -114,11 +117,7 @@ export const reserveForDelivery = mutation({
       .collect();
 
     for (const hook of userHooks) {
-      if (
-        hook.pausedAt &&
-        hook.pausedReason &&
-        hook.pausedReason !== "admin"
-      ) {
+      if (hook.pausedAt && hook.pausedReason && hook.pausedReason !== "admin") {
         let shouldResume = false;
         if (
           hook.pausedReason === "daily_limit" &&
@@ -217,7 +216,15 @@ export const patchDeliveryResult = mutation({
   },
   handler: async (
     ctx,
-    { eventId, success, durationMs, responseStatus, responseBody, error, serverSecret },
+    {
+      eventId,
+      success,
+      durationMs,
+      responseStatus,
+      responseBody,
+      error,
+      serverSecret,
+    },
   ) => {
     requireServerSecret(serverSecret);
 
@@ -229,24 +236,5 @@ export const patchDeliveryResult = mutation({
       error,
       deliveryStatus: success ? "delivered" : "failed",
     });
-  },
-});
-
-export const countDailyByUser = query({
-  args: {
-    userId: v.string(),
-    serverSecret: v.string(),
-  },
-  handler: async (ctx, { userId, serverSecret }) => {
-    requireServerSecret(serverSecret);
-
-    const dailyWindow = Math.floor(Date.now() / 86400000) * 86400000;
-    const events = await ctx.db
-      .query("events")
-      .withIndex("by_user", (q) =>
-        q.eq("userId", userId).gte("timestamp", dailyWindow),
-      )
-      .collect();
-    return events.length;
   },
 });
