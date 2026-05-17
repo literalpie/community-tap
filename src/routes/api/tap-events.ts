@@ -1,9 +1,14 @@
 import { assureAdminAuth, parseTapEvent, type TapEvent } from "@atproto/tap";
 import { createFileRoute } from "@tanstack/solid-router";
 import { ConvexHttpClient } from "convex/browser";
+import crypto from "node:crypto";
 import { requireConvexServerSecret } from "~/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
+
+function createSignature(payload: string, secret: string): string {
+  return crypto.createHmac("sha256", secret).update(payload).digest("hex");
+}
 
 async function handleHookRecordEvent(
   event: Extract<TapEvent, { type: "record" }>,
@@ -104,7 +109,6 @@ async function handleHookRecordEvent(
   );
 }
 
-/** Forward an event to a registered hook */
 async function deliverToMatchingHooks(
   event: Extract<TapEvent, { type: "record" }>,
   rawEvent: unknown,
@@ -112,13 +116,13 @@ async function deliverToMatchingHooks(
   CONVEX_SERVER_SECRET: string,
 ): Promise<Response> {
   const collection = event.collection;
+  const rawBody = JSON.stringify(rawEvent);
+  const action = event.action as "create" | "update" | "delete";
 
-  const allHooks = await convex.query(api.hooks.listAll, {
-    serverSecret: CONVEX_SERVER_SECRET,
+  const nsidHooks = await convex.query(api.hooks.listByNsid, {
+    nsid: collection,
   });
-  const matchingHooks = allHooks.filter(
-    (h) => h.nsid === collection && h.isActive,
-  );
+  const matchingHooks = nsidHooks.filter((h) => h.isActive);
 
   if (matchingHooks.length === 0) {
     return new Response(JSON.stringify({ matched: 0, delivered: 0 }), {
@@ -126,81 +130,145 @@ async function deliverToMatchingHooks(
       headers: { "Content-Type": "application/json" },
     });
   }
-  console.log(
-    `Matched ${matchingHooks.length} hooks for collection ${collection}`,
-  );
 
-  const deliveries = await Promise.allSettled(
-    matchingHooks.map(async (hook: Doc<"hooks">) => {
-      const startTime = Date.now();
-      let result: {
-        hookId: Id<"hooks">;
-        success: boolean;
-        status?: number;
-        error?: string;
-        duration: number;
-      };
+  const byUser = new Map<string, Doc<"hooks">[]>();
+  for (const hook of matchingHooks) {
+    const list = byUser.get(hook.userId);
+    if (list) {
+      list.push(hook);
+    } else {
+      byUser.set(hook.userId, [hook]);
+    }
+  }
 
-      try {
-        const response = await fetch(hook.webhookUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Community-Tap-Event": "true",
-            "X-Community-Tap-Nsid": collection,
-          },
-          body: JSON.stringify(rawEvent),
-        });
-        const duration = Date.now() - startTime;
-        result = {
-          hookId: hook._id,
-          success: response.ok,
-          status: response.status,
-          duration,
-        };
-      } catch (error) {
-        const duration = Date.now() - startTime;
-        result = {
-          hookId: hook._id,
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-          duration,
-        };
-      }
+  const reservationResults = await Promise.all(
+    [...byUser.entries()].map(async ([userId, hooks]) => {
+      const hookIds = hooks.map((h) => h._id);
 
-      const logPayload = {
+      const reservation = await convex.mutation(api.events.reserveForDelivery, {
+        userId,
+        hookIds,
+        event: {
+          repo: event.did,
+          collection: event.collection,
+          rkey: event.rkey,
+          action,
+          requestBody: rawBody,
+        },
         serverSecret: CONVEX_SERVER_SECRET,
-        hookId: hook._id,
-        userId: hook.userId,
-        nsid: hook.nsid,
-        repo: event.did,
-        collection: event.collection,
-        rkey: event.rkey,
-        action: event.action,
-        webhookUrl: hook.webhookUrl,
-        requestBody: JSON.stringify(rawEvent),
-        responseStatus: result.status,
-        durationMs: result.duration,
-        success: result.success,
-        error: result.error,
-      };
-      try {
-        await convex.mutation(api.events.logEvent, logPayload);
-      } catch (logErr) {
-        console.error("Failed to log event to Convex:", logErr);
+      });
+
+      if (!reservation.allowed) {
+        console.log(
+          `Skipping deliveries for user ${userId}: ${reservation.reason}`,
+        );
+        return null;
       }
 
-      return result;
+      const { eventIds } = reservation as { eventIds: string[] };
+      const eventIdByHookId = new Map<string, Id<"events">>();
+      for (let i = 0; i < hookIds.length; i++) {
+        eventIdByHookId.set(hookIds[i], eventIds[i] as Id<"events">);
+      }
+
+      return { userId, hooks, eventIdByHookId };
     }),
   );
 
-  const delivered = deliveries.filter(
-    (d) => d.status === "fulfilled" && d.value?.success,
+  const succeeded = reservationResults.filter(
+    (r): r is NonNullable<typeof r> => r !== null,
+  );
+
+  const userInfoEntries = await Promise.all(
+    succeeded.map(async ({ userId }) => {
+      const userInfo = await convex.query(api.users.getDeliveryInfo, {
+        did: userId,
+        serverSecret: CONVEX_SERVER_SECRET,
+      });
+      return { userId, userInfo };
+    }),
+  );
+
+  const userInfoById = new Map(
+    userInfoEntries.map((e) => [e.userId, e.userInfo]),
+  );
+
+  const deliveryResults = await Promise.allSettled(
+    succeeded.flatMap(({ userId, hooks, eventIdByHookId }) => {
+      const userInfo = userInfoById.get(userId);
+      const deliverable = hooks.filter((h) => h.pausedReason !== "admin");
+
+      return deliverable.map(async (hook) => {
+        const eventId = eventIdByHookId.get(hook._id);
+        if (!eventId) return false;
+
+        const startTime = Date.now();
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+
+        try {
+          const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+            "X-Community-Tap-Event": "true",
+            "X-Community-Tap-Nsid": collection,
+            "X-Community-Tap-Timestamp": String(startTime),
+          };
+
+          if (userInfo?.webhookSigningSecret) {
+            const signature = createSignature(
+              `${startTime}.${rawBody}`,
+              userInfo.webhookSigningSecret,
+            );
+            headers["X-Community-Tap-Signature"] = `sha256=${signature}`;
+          }
+
+          const response = await fetch(hook.webhookUrl, {
+            method: "POST",
+            headers,
+            body: rawBody,
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
+          const duration = Date.now() - startTime;
+
+          await convex.mutation(api.events.patchDeliveryResult, {
+            eventId,
+            success: response.ok,
+            durationMs: duration,
+            responseStatus: response.status,
+            serverSecret: CONVEX_SERVER_SECRET,
+          });
+
+          return response.ok;
+        } catch (error) {
+          clearTimeout(timeout);
+          const duration = Date.now() - startTime;
+          const errorMsg =
+            error instanceof Error ? error.message : "Unknown error";
+
+          await convex.mutation(api.events.patchDeliveryResult, {
+            eventId,
+            success: false,
+            durationMs: duration,
+            error: errorMsg,
+            serverSecret: CONVEX_SERVER_SECRET,
+          });
+
+          return false;
+        }
+      });
+    }),
+  );
+
+  const totalDelivered = deliveryResults.filter(
+    (r) => r.status === "fulfilled" && r.value === true,
   ).length;
-  const failed = deliveries.length - delivered;
 
   return new Response(
-    JSON.stringify({ matched: matchingHooks.length, delivered, failed }),
+    JSON.stringify({
+      matched: matchingHooks.length,
+      delivered: totalDelivered,
+    }),
     {
       status: 200,
       headers: { "Content-Type": "application/json" },

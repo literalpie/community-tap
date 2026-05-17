@@ -13,6 +13,7 @@
 | Webhook Verification         | Optional per-user outbound signing secret; send HMAC headers with webhook deliveries                     |
 | Limit Behavior               | Reserve rows in `events` before delivery. Auto-resume when the relevant window resets. Drop while paused |
 | Limit Source                 | Use bounded indexed reads from `events`; no separate `eventCounters` table for now                       |
+| `repoRegistrations.nsid`     | Dropped — not useful. NSID is on the hook record; the endpoint just needs a `repoDid`                    |
 | Event Retention              | No pruning — leave unbounded for now                                                                     |
 | Webhook Timeout              | Global hard cap of 5000ms (5 seconds)                                                                    |
 | Landing Page                 | Replace `/` with a public landing page; authed users redirect to `/dashboard`                            |
@@ -92,8 +93,7 @@ No `eventCounters` table is needed at the current limits. Counting at most 50 mi
 
 **Optionally update `repoRegistrations`**
 
-- Add `nsid: v.optional(v.string())` so `/api/hooks/addRepo` can record which registered hook justified the repo registration.
-- Add index `by_registeredBy_and_nsid` on `["registeredBy", "nsid"]` if the admin view needs it.
+- The `nsid` field was considered but dropped. NSID is on the hook record and provides no additional value on the registration itself.
 
 ### Step 2: Use a Permanent Server-Side Convex Boundary
 
@@ -207,16 +207,12 @@ The PLAN asks for a user-created key that helps webhook receivers verify that re
 - `/api/hooks/addRepo` requires `Authorization: Bearer <apiKey>`.
 - Hash the submitted key and look up the user by `addRepoApiKeyHash` through an internal server-side Convex function. This route is machine-to-machine and is not tied to a browser user session.
 - If not found, return 401.
-- Request body should be `{ "repoDid": "did:...", "nsid": "com.example.record" }`.
+- Request body should be `{ "repoDid": "did:..." }`.
 - Validate `repoDid` is a sensible DID string.
-- Validate `nsid` is a sensible NSID string.
-- Validate the API-key owner has an active, unpaused hook for that exact `nsid`.
 - Ignore any client-supplied `registeredBy`; derive it from the API key owner.
 - Call Tap's `addRepos([repoDid])`.
 - If Tap registration fails, return a 502 instead of silently succeeding.
-- Store the registration with `registeredBy = user.did` and `nsid`.
-
-This makes the PLAN's "matching hook in Convex" requirement concrete. The submitted repo DID belongs to the developer's end user, not to the Community Tap account owner, so the meaningful validation is: does the API key owner have an active hook for the submitted NSID?
+- Store the registration with `registeredBy = user.did`.
 
 **Also: register the Community Tap user's own repo on hook creation/sync**
 
@@ -303,10 +299,9 @@ Whenever a hook is created through the UI or discovered through `com.communityta
 - [ ] Phase 2.5: Deleting a `com.communitytap.hook` record from PDS removes it from Convex.
 - [ ] Create hook -> addRepo API key can be generated and shown once.
 - [ ] Regenerate addRepo API key -> old key stops working.
-- [ ] Call `/api/hooks/addRepo` with valid key and matching NSID -> success.
+- [ ] Call `/api/hooks/addRepo` with valid key -> success.
 - [ ] Call `/api/hooks/addRepo` without key -> 401.
 - [ ] Call `/api/hooks/addRepo` with wrong key -> 401.
-- [ ] Call `/api/hooks/addRepo` with a valid key but an NSID the user has no hook for -> 400 or 403.
 - [ ] Call `/api/hooks/addRepo` when Tap is unavailable -> 502.
 - [ ] 51st accepted event in one minute -> deliveries for that user pause, banner appears.
 - [ ] 1001st accepted event in one day -> deliveries for that user pause, banner appears.

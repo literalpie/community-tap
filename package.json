@@ -40,8 +40,10 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "@solidjs/testing-library": "^0.8.10",
     "@tanstack/devtools-vite": "latest",
+    "convex-test": "^0.0.52",
     "jsdom": "^28.1.0",
     "oxfmt": "^0.49.0",
     "oxlint": "^1.64.0",

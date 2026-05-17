@@ -41,15 +41,41 @@ function HookDetailPage() {
               {loaderData().hook.recordUri}
             </p>
           </div>
-          <span
-            class={`inline-flex px-3 py-1 text-sm rounded-full ${
-              loaderData().hook.isActive
-                ? "bg-green-100 text-green-700"
-                : "bg-zinc-100 text-zinc-600"
-            }`}
+          <Show
+            when={
+              loaderData().hook.pausedAt &&
+              loaderData().hook.pausedReason === "admin"
+            }
           >
-            {loaderData().hook.isActive ? "Active" : "Inactive"}
-          </span>
+            <span class="inline-flex px-3 py-1 text-sm rounded-full bg-red-100 text-red-700">
+              Admin Paused
+            </span>
+          </Show>
+          <Show
+            when={
+              loaderData().hook.pausedAt &&
+              loaderData().hook.pausedReason &&
+              loaderData().hook.pausedReason !== "admin"
+            }
+          >
+            <span class="inline-flex px-3 py-1 text-sm rounded-full bg-amber-100 text-amber-700">
+              {loaderData().hook.pausedReason === "daily_limit"
+                ? "Paused — Daily Limit"
+                : "Paused — Minute Limit"}
+            </span>
+          </Show>
+          <Show
+            when={!loaderData().hook.pausedAt && loaderData().hook.isActive}
+          >
+            <span class="inline-flex px-3 py-1 text-sm rounded-full bg-green-100 text-green-700">
+              Active
+            </span>
+          </Show>
+          <Show when={!loaderData().hook.isActive}>
+            <span class="inline-flex px-3 py-1 text-sm rounded-full bg-zinc-100 text-zinc-600">
+              Inactive
+            </span>
+          </Show>
         </div>
 
         <dl>

@@ -18,6 +18,16 @@ export const listByUser = query({
   },
 });
 
+export const listByNsid = query({
+  args: { nsid: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("hooks")
+      .withIndex("by_nsid", (q) => q.eq("nsid", args.nsid))
+      .collect();
+  },
+});
+
 export const listAll = query({
   args: { serverSecret: v.string() },
   handler: async (ctx, args) => {
@@ -96,5 +106,42 @@ export const deleteByRecordUri = mutation({
       return true;
     }
     return false;
+  },
+});
+
+export const pause = mutation({
+  args: {
+    hookId: v.id("hooks"),
+    reason: v.union(
+      v.literal("daily_limit"),
+      v.literal("minute_limit"),
+      v.literal("admin"),
+    ),
+    serverSecret: v.string(),
+  },
+  handler: async (ctx, { hookId, reason, serverSecret }) => {
+    requireServerSecret(serverSecret);
+    await ctx.db.patch(hookId, {
+      pausedAt: Date.now(),
+      pausedReason: reason,
+    });
+  },
+});
+
+export const unpause = mutation({
+  args: {
+    hookId: v.id("hooks"),
+    serverSecret: v.string(),
+  },
+  handler: async (ctx, { hookId, serverSecret }) => {
+    requireServerSecret(serverSecret);
+    const hook = await ctx.db.get(hookId);
+    if (!hook) return;
+    if (hook.pausedReason === "admin") {
+      await ctx.db.patch(hookId, {
+        pausedAt: undefined,
+        pausedReason: undefined,
+      });
+    }
   },
 });

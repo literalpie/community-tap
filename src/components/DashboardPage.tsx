@@ -84,6 +84,27 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      <Show
+        when={hooks().some(
+          (h) => h.pausedAt && h.pausedReason && h.pausedReason !== "admin",
+        )}
+      >
+        <div class="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm">
+          <strong>Delivery paused</strong> — daily limit (1000 events) or minute
+          limit (50 events) reached. Resumes automatically when the relevant
+          window resets at the top of the minute or at midnight UTC.
+        </div>
+      </Show>
+
+      <Show
+        when={hooks().some((h) => h.pausedAt && h.pausedReason === "admin")}
+      >
+        <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded-md text-sm">
+          <strong>Hook paused by admin</strong> — one or more of your hooks have
+          been paused by the Community Tap administrator.
+        </div>
+      </Show>
+
       <Show when={syncResult()}>
         <div class="mb-4 p-3 bg-green-50 text-green-700 rounded-md text-sm">
           {syncResult()}
@@ -148,15 +169,34 @@ export default function DashboardPage() {
                       {formatDate(hook.createdAt)}
                     </td>
                     <td class="px-4 py-3">
-                      <span
-                        class={`inline-flex px-2 py-1 text-xs rounded-full ${
-                          hook.isActive
-                            ? "bg-green-100 text-green-700"
-                            : "bg-zinc-100 text-zinc-600"
-                        }`}
+                      <Show
+                        when={hook.pausedAt && hook.pausedReason === "admin"}
                       >
-                        {hook.isActive ? "Active" : "Inactive"}
-                      </span>
+                        <span class="inline-flex px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">
+                          Admin Paused
+                        </span>
+                      </Show>
+                      <Show
+                        when={
+                          hook.pausedAt &&
+                          hook.pausedReason &&
+                          hook.pausedReason !== "admin"
+                        }
+                      >
+                        <span class="inline-flex px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700">
+                          Limited
+                        </span>
+                      </Show>
+                      <Show when={!hook.pausedAt && hook.isActive}>
+                        <span class="inline-flex px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
+                          Active
+                        </span>
+                      </Show>
+                      <Show when={!hook.isActive}>
+                        <span class="inline-flex px-2 py-1 text-xs rounded-full bg-zinc-100 text-zinc-600">
+                          Inactive
+                        </span>
+                      </Show>
                     </td>
                     <td class="px-4 py-3 text-right">
                       <button
