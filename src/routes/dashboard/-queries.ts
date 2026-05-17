@@ -41,6 +41,7 @@ export const listHooks = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export interface GetHookResult {
+  did: string;
   hook: Doc<"hooks">;
   events: Doc<"events">[];
 }
@@ -74,5 +75,5 @@ export const getHookById = createServerFn({ method: "GET" })
       hookId: hookIdTyped,
       limit: 50,
     });
-    return { hook, events: events as Doc<"events">[] };
+    return { did, hook, events: events as Doc<"events">[] };
   });
