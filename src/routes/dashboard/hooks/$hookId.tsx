@@ -133,7 +133,15 @@ function HookDetailPage() {
               <tbody>
                 <For each={events()}>
                   {(event) => (
-                    <tr class={event.success ? "" : "bg-red-50"}>
+                    <tr
+                      class={
+                        event.deliveryStatus === "failed"
+                          ? "bg-red-50"
+                          : event.deliveryStatus === "reserved"
+                            ? "bg-blue-50"
+                            : ""
+                      }
+                    >
                       <td class="px-4 py-3 whitespace-nowrap">
                         {formatTime(event.timestamp)}
                       </td>
@@ -149,10 +157,12 @@ function HookDetailPage() {
                         </span>
                       </td>
                       <td class="px-4 py-3">
-                        {event.success ? (
+                        {event.deliveryStatus === "delivered" ? (
                           <span class="text-green-600">
                             ✓ {event.responseStatus ?? "-"}
                           </span>
+                        ) : event.deliveryStatus === "reserved" ? (
+                          <span class="text-zinc-400 italic">Pending</span>
                         ) : (
                           <span class="text-red-600">
                             ✗ {event.error ?? event.responseStatus ?? "Failed"}
