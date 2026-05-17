@@ -149,7 +149,8 @@ function HookDetailPage() {
                           {event.action}
                         </span>
                       </td>
-                      <td class="px-4 py-3">
+                      {/* min-width prevents resizing when "pending" */}
+                      <td class="px-4 py-3 min-w-21.25">
                         {event.deliveryStatus === "delivered" ? (
                           <span class="text-green-600">
                             ✓ {event.responseStatus ?? "-"}
