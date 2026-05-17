@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/solid-router";
-import { For, Show } from "solid-js";
 import { useQuery } from "convex-solidjs";
+import { For, Show } from "solid-js";
 import { getSessionFn } from "~/routes/-session";
 import { getHookById } from "~/routes/dashboard/-queries";
 import { api } from "../../../../convex/_generated/api";
@@ -31,7 +31,10 @@ function HookDetailPage() {
 
   const { data } = useQuery(
     api.hooks.getHookWithEvents,
-    () => ({ userId: loaderData().did, hookId: params().hookId as Id<"hooks"> }),
+    () => ({
+      userId: loaderData().did,
+      hookId: params().hookId as Id<"hooks">,
+    }),
     () => ({
       enabled: !!loaderData().did,
       initialData: { hook: loaderData().hook, events: loaderData().events },
@@ -88,9 +91,7 @@ function HookDetailPage() {
         <dl>
           <div class="mb-4">
             <dt class="text-sm font-medium text-zinc-600">Webhook URL</dt>
-            <dd class="text-sm font-mono text-zinc-800">
-              {hook().webhookUrl}
-            </dd>
+            <dd class="text-sm font-mono text-zinc-800">{hook().webhookUrl}</dd>
           </div>
           <div>
             <dt class="text-sm font-medium text-zinc-600">Created</dt>
@@ -133,15 +134,7 @@ function HookDetailPage() {
               <tbody>
                 <For each={events()}>
                   {(event) => (
-                    <tr
-                      class={
-                        event.deliveryStatus === "failed"
-                          ? "bg-red-50"
-                          : event.deliveryStatus === "reserved"
-                            ? "bg-blue-50"
-                            : ""
-                      }
-                    >
+                    <tr>
                       <td class="px-4 py-3 whitespace-nowrap">
                         {formatTime(event.timestamp)}
                       </td>
