@@ -1,4 +1,4 @@
-import { assureAdminAuth, parseTapEvent, type TapEvent } from "@atproto/tap";
+import { assureAdminAuth, parseTapEvent, Tap, type TapEvent } from "@atproto/tap";
 import { createFileRoute } from "@tanstack/solid-router";
 import { ConvexHttpClient } from "convex/browser";
 import crypto from "node:crypto";
@@ -330,11 +330,26 @@ export const Route = createFileRoute("/api/tap-events")({
           >;
 
           if (event.collection === "com.communitytap.hook") {
-            return await handleHookRecordEvent(
+            const result = await handleHookRecordEvent(
               event,
               convex,
               CONVEX_SERVER_SECRET,
             );
+            const tapUrl =
+              import.meta.env.VITE_TAP_BASE_URL || "http://localhost:2480";
+            const adminPassword = process.env.TAP_ADMIN_PASSWORD;
+            if (adminPassword) {
+              try {
+                const tap = new Tap(tapUrl, { adminPassword });
+                await tap.addRepos([event.did]);
+              } catch (tapError) {
+                console.error(
+                  "Tap registration after hook discovery failed:",
+                  tapError,
+                );
+              }
+            }
+            return result;
           }
 
           return await deliverToMatchingHooks(

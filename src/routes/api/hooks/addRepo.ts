@@ -1,10 +1,10 @@
 import { Tap } from "@atproto/tap";
 import { createFileRoute } from "@tanstack/solid-router";
 import { ConvexHttpClient } from "convex/browser";
+import crypto from "node:crypto";
 import { requireConvexServerSecret } from "~/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 
-// Real Tap client - needs Node.js, so we import dynamically in the handler
 async function getTapClient() {
   const tapUrl = import.meta.env.VITE_TAP_BASE_URL || "http://localhost:2480";
   const tapPassword = process.env.TAP_ADMIN_PASSWORD;
@@ -23,44 +23,70 @@ export const Route = createFileRoute("/api/hooks/addRepo")({
         const convex = new ConvexHttpClient(convexUrl);
 
         try {
-          const body = await request.json();
-          const { repoDid, registeredBy } = body;
-
-          if (!repoDid || typeof repoDid !== "string") {
-            return new Response(JSON.stringify({ error: "Missing repoDid" }), {
-              status: 400,
+          const authHeader = request.headers.get("Authorization") ?? "";
+          const apiKey = authHeader.replace("Bearer ", "").trim();
+          if (!apiKey) {
+            return new Response(JSON.stringify({ error: "Unauthorized" }), {
+              status: 401,
               headers: { "Content-Type": "application/json" },
             });
           }
 
-          // Check if any hooks exist for this repo
-          const allHooks = await convex.query(api.hooks.listAll, {
-            serverSecret: CONVEX_SERVER_SECRET,
-          });
-          const hooksForRepo = allHooks.filter((h) => h.isActive);
+          const apiKeyHash = crypto
+            .createHash("sha256")
+            .update(apiKey)
+            .digest("hex");
 
-          if (hooksForRepo.length === 0) {
+          const user = await convex.query(api.users.findByApiKeyHash, {
+            serverSecret: CONVEX_SERVER_SECRET,
+            apiKeyHash,
+          });
+
+          if (!user) {
+            return new Response(JSON.stringify({ error: "Unauthorized" }), {
+              status: 401,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
+
+          const body = await request.json();
+          const { repoDid } = body;
+
+          if (typeof repoDid !== "string") {
             return new Response(
-              JSON.stringify({ error: "No hooks found. Create a hook first." }),
-              { status: 400, headers: { "Content-Type": "application/json" } },
+              JSON.stringify({ error: "repoDid is required" }),
+              {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+              },
             );
           }
 
-          // Call Tap to register the repo
+          let tapSuccess = false;
           try {
             const tap = await getTapClient();
             await tap.addRepos([repoDid]);
-            console.log("Added repo to Tap:", repoDid);
+            tapSuccess = true;
           } catch (tapError) {
             console.error("Tap error:", tapError);
-            // Continue even if Tap fails - log but don't fail
           }
 
-          // Store registration in Convex
+          if (!tapSuccess) {
+            return new Response(
+              JSON.stringify({
+                error: "Failed to register repo with Tap service",
+              }),
+              {
+                status: 502,
+                headers: { "Content-Type": "application/json" },
+              },
+            );
+          }
+
           await convex.mutation(api.repos.registerRepo, {
             serverSecret: CONVEX_SERVER_SECRET,
             repoDid,
-            registeredBy: registeredBy || "unknown",
+            registeredBy: user.did,
           });
 
           return new Response(JSON.stringify({ success: true }), {

@@ -14,6 +14,6 @@ export const Route = createFileRoute("/dashboard/")({
   },
   loader: async () => {
     const result = await listHooks();
-    return { hooks: result.hooks };
+    return { hooks: result.hooks, hasAddRepoApiKey: result.hasAddRepoApiKey };
   },
 });

@@ -37,7 +37,15 @@ export const listHooks = createServerFn({ method: "GET" }).handler(async () => {
     serverSecret: CONVEX_SERVER_SECRET,
     userId: did,
   });
-  return { did, hooks: hooks as Doc<"hooks">[] };
+  const hasAddRepoApiKey = await convex.query(api.users.hasApiKey, {
+    serverSecret: CONVEX_SERVER_SECRET,
+    did,
+  });
+  return {
+    did,
+    hooks: hooks as Doc<"hooks">[],
+    hasAddRepoApiKey,
+  };
 });
 
 export interface GetHookResult {

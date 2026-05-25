@@ -4,6 +4,7 @@ import { Route } from "~/routes/dashboard";
 import {
   createHookOnPDS as createHookAction,
   deleteHookOnPDS as deleteHookAction,
+  generateAddRepoApiKey as generateApiKeyAction,
   syncHooksFromPDS as syncAction,
 } from "~/routes/dashboard/-actions";
 import { listHooks } from "~/routes/dashboard/-queries";
@@ -16,12 +17,18 @@ export default function DashboardPage() {
   const [showNewForm, setShowNewForm] = createSignal(false);
   const [syncResult, setSyncResult] = createSignal<string | null>(null);
   const [lastSync, setLastSync] = createSignal<string | null>(null);
+  const [hasAddRepoApiKey, setHasAddRepoApiKey] = createSignal(
+    loaderData().hasAddRepoApiKey,
+  );
+  const [apiKey, setApiKey] = createSignal<string | null>(null);
+  const [generatingKey, setGeneratingKey] = createSignal(false);
 
   async function loadHooks() {
     setLoading(true);
     try {
       const result = await listHooks();
       setHooks(result.hooks);
+      setHasAddRepoApiKey(result.hasAddRepoApiKey);
     } catch (err) {
       console.error("Failed to load hooks:", err);
     } finally {
@@ -37,6 +44,33 @@ export default function DashboardPage() {
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to delete hook");
     }
+  }
+
+  async function handleGenerateApiKey() {
+    if (hasAddRepoApiKey()) {
+      if (
+        !confirm(
+          "Regenerating will invalidate your existing API key. Continue?",
+        )
+      )
+        return;
+    }
+    setGeneratingKey(true);
+    try {
+      const result = await generateApiKeyAction();
+      setApiKey(result.rawKey);
+      setHasAddRepoApiKey(true);
+    } catch (err) {
+      alert(
+        err instanceof Error ? err.message : "Failed to generate API key",
+      );
+    } finally {
+      setGeneratingKey(false);
+    }
+  }
+
+  function dismissApiKey() {
+    setApiKey(null);
   }
 
   async function handleSync() {
@@ -215,6 +249,58 @@ export default function DashboardPage() {
         </div>
       </Show>
 
+      <div class="mt-8 border rounded-lg p-6 bg-white">
+        <h2 class="text-lg font-semibold mb-2">Add Repo API Key</h2>
+        <p class="text-sm text-zinc-600 mb-4">
+          Use this key to authenticate with the{" "}
+          <code class="text-xs bg-zinc-100 px-1 py-0.5 rounded">
+            /api/hooks/addRepo
+          </code>{" "}
+          endpoint to register repos with Tap programmatically.
+        </p>
+
+        <Show when={apiKey()}>
+          <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <p class="text-sm font-medium text-blue-800 mb-1">
+              Your new API key
+            </p>
+            <p class="text-xs text-blue-600 mb-2">
+              This is the only time you'll see this key. Copy it now.
+            </p>
+            <div class="flex gap-2">
+              <code class="flex-1 px-3 py-2 bg-white border rounded text-sm font-mono break-all">
+                {apiKey()}
+              </code>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(apiKey()!);
+                  dismissApiKey();
+                }}
+                class="px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 shrink-0"
+              >
+                Copy &amp; Dismiss
+              </button>
+            </div>
+          </div>
+        </Show>
+
+        <Show when={!apiKey()}>
+          <button
+            type="button"
+            onClick={handleGenerateApiKey}
+            disabled={generatingKey()}
+            class="px-4 py-2 border rounded-md hover:bg-zinc-50 disabled:opacity-50 text-sm"
+          >
+            {generatingKey()
+              ? "Generating..."
+              : hasAddRepoApiKey()
+                ? "Regenerate API Key"
+                : "Generate API Key"}
+          </button>
+        </Show>
+      </div>
+
       <Show when={showNewForm()}>
         <NewHookModal
           onClose={() => setShowNewForm(false)}
@@ -229,6 +315,7 @@ function NewHookModal(props: { onClose: () => void; onSuccess: () => void }) {
   const [nsid, setNsid] = createSignal("");
   const [webhookUrl, setWebhookUrl] = createSignal("");
   const [error, setError] = createSignal("");
+  const [warning, setWarning] = createSignal("");
   const [submitting, setSubmitting] = createSignal(false);
   const [nsidError, setNsidError] = createSignal("");
 
@@ -255,7 +342,6 @@ function NewHookModal(props: { onClose: () => void; onSuccess: () => void }) {
       return;
     }
 
-    // Basic URL validation
     try {
       void new URL(webhookUrl());
     } catch {
@@ -265,11 +351,15 @@ function NewHookModal(props: { onClose: () => void; onSuccess: () => void }) {
 
     setSubmitting(true);
     try {
-      await createHookAction({
+      const result = await createHookAction({
         data: { nsid: nsid(), webhookUrl: webhookUrl() },
       });
-      props.onClose();
-      props.onSuccess();
+      if (result.tapWarning) {
+        setWarning(result.tapWarning);
+      } else {
+        props.onClose();
+        props.onSuccess();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create hook");
     } finally {
@@ -330,6 +420,23 @@ function NewHookModal(props: { onClose: () => void; onSuccess: () => void }) {
             <p class="text-red-500 text-sm">{error()}</p>
           </Show>
 
+          <Show when={warning()}>
+            <p class="text-amber-600 text-sm bg-amber-50 border border-amber-200 rounded-md p-3">
+              {warning()}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                props.onClose();
+                props.onSuccess();
+              }}
+              class="w-full px-4 py-2 border rounded-md hover:bg-zinc-50"
+            >
+              Continue
+            </button>
+          </Show>
+
+          <Show when={!warning()}>
           <div class="flex gap-3 pt-2">
             <button
               type="button"
@@ -346,6 +453,7 @@ function NewHookModal(props: { onClose: () => void; onSuccess: () => void }) {
               {submitting() ? "Creating..." : "Create hook"}
             </button>
           </div>
+          </Show>
         </form>
       </div>
     </div>
