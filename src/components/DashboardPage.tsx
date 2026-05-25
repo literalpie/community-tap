@@ -7,6 +7,7 @@ import {
   syncHooksFromPDS as syncAction,
 } from "~/routes/dashboard/-actions";
 import { listHooks } from "~/routes/dashboard/-queries";
+import WebhookSettingsModal from "~/components/WebhookSettingsModal";
 
 export default function DashboardPage() {
   const loaderData = Route.useLoaderData();
@@ -14,6 +15,7 @@ export default function DashboardPage() {
   const [hooks, setHooks] = createSignal(loaderData().hooks);
   const [loading, setLoading] = createSignal(false);
   const [showNewForm, setShowNewForm] = createSignal(false);
+  const [showWebhookSettings, setShowWebhookSettings] = createSignal(false);
   const [syncResult, setSyncResult] = createSignal<string | null>(null);
   const [lastSync, setLastSync] = createSignal<string | null>(null);
 
@@ -63,26 +65,33 @@ export default function DashboardPage() {
 
   return (
     <div class="container mx-auto px-4 py-8">
-      <div class="flex justify-between items-center mb-8">
-        <h1 class="text-2xl font-bold">Your hooks</h1>
-        <div class="flex gap-3">
-          <button
-            type="button"
-            onClick={handleSync}
-            disabled={loading()}
-            class="px-4 py-2 border rounded-md hover:bg-zinc-50 disabled:opacity-50"
-          >
-            {loading() ? "Syncing..." : "Sync from AT Proto"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowNewForm(true)}
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            Add hook
-          </button>
+        <div class="flex justify-between items-center mb-8">
+          <h1 class="text-2xl font-bold">Your hooks</h1>
+          <div class="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setShowWebhookSettings(true)}
+              class="px-4 py-2 border rounded-md hover:bg-zinc-50"
+            >
+              Webhook Settings
+            </button>
+            <button
+              type="button"
+              onClick={handleSync}
+              disabled={loading()}
+              class="px-4 py-2 border rounded-md hover:bg-zinc-50 disabled:opacity-50"
+            >
+              {loading() ? "Syncing..." : "Sync from AT Proto"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowNewForm(true)}
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Add hook
+            </button>
+          </div>
         </div>
-      </div>
 
       <Show
         when={hooks().some(
@@ -220,6 +229,10 @@ export default function DashboardPage() {
           onClose={() => setShowNewForm(false)}
           onSuccess={loadHooks}
         />
+      </Show>
+      
+      <Show when={showWebhookSettings()}>
+        <WebhookSettingsModal onClose={() => setShowWebhookSettings(false)} />
       </Show>
     </div>
   );

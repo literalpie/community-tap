@@ -6,6 +6,7 @@ import { requireConvexServerSecret } from "~/lib/utils";
 import { getOAuthClient } from "~/auth/client";
 import { createHookRecord, deleteHookRecord, listHookRecords } from "~/lib/pds";
 import { api } from "../../../convex/_generated/api";
+import { getAuthenticatedDid } from "./-queries";
 
 function getConvexHttpClient(): ConvexHttpClient {
   const url = import.meta.env.VITE_CONVEX_URL;
@@ -225,3 +226,31 @@ export const syncHooksFromPDS = createServerFn({ method: "POST" }).handler(
     return { added, removed };
   },
 );
+
+export const generateWebhookSigningSecret = createServerFn({ method: "POST" })
+  .handler(async () => {
+    const CONVEX_SERVER_SECRET = requireConvexServerSecret();
+    const did = await getAuthenticatedDid();
+    const convex = getConvexHttpClient();
+
+    const secret = await convex.mutation(api.users.generateWebhookSigningSecret, {
+      serverSecret: CONVEX_SERVER_SECRET,
+      did,
+    });
+
+    return { secret };
+  });
+
+export const regenerateWebhookSigningSecret = createServerFn({ method: "POST" })
+  .handler(async () => {
+    const CONVEX_SERVER_SECRET = requireConvexServerSecret();
+    const did = await getAuthenticatedDid();
+    const convex = getConvexHttpClient();
+
+    const secret = await convex.mutation(api.users.regenerateWebhookSigningSecret, {
+      serverSecret: CONVEX_SERVER_SECRET,
+      did,
+    });
+
+    return { secret };
+  });

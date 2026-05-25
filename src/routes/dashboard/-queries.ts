@@ -14,7 +14,7 @@ function getConvexHttpClient(): ConvexHttpClient {
   return new ConvexHttpClient(url);
 }
 
-async function getAuthenticatedDid(): Promise<string> {
+export async function getAuthenticatedDid(): Promise<string> {
   const did = getCookie("did");
   if (!did) {
     throw new Error("Not authenticated");
@@ -76,4 +76,19 @@ export const getHookById = createServerFn({ method: "GET" })
       limit: 50,
     });
     return { did, hook, events: events as Doc<"events">[] };
+  });
+
+export const getUserWebhookSettings = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const CONVEX_SERVER_SECRET = requireConvexServerSecret();
+    const did = await getAuthenticatedDid();
+    const convex = getConvexHttpClient();
+    const userInfo = await convex.query(api.users.getDeliveryInfo, {
+      did,
+      serverSecret: CONVEX_SERVER_SECRET,
+    });
+    return {
+      hasWebhookSigningSecret: !!userInfo?.webhookSigningSecret,
+      webhookSigningSecretCreatedAt: userInfo?.webhookSigningSecretCreatedAt,
+    };
   });
