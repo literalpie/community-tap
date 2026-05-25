@@ -45,8 +45,7 @@ export const generateAddRepoApiKey = createServerFn({ method: "POST" }).handler(
     const { did } = await getSessionAgent();
     const convex = getConvexHttpClient();
 
-    const rawKey =
-      "ct_repo_" + crypto.randomBytes(32).toString("hex");
+    const rawKey = "ct_repo_" + crypto.randomBytes(32).toString("hex");
     const hash = crypto.createHash("sha256").update(rawKey).digest("hex");
 
     await convex.mutation(api.users.storeApiKeyHash, {

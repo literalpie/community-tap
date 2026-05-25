@@ -61,9 +61,7 @@ export default function DashboardPage() {
       setApiKey(result.rawKey);
       setHasAddRepoApiKey(true);
     } catch (err) {
-      alert(
-        err instanceof Error ? err.message : "Failed to generate API key",
-      );
+      alert(err instanceof Error ? err.message : "Failed to generate API key");
     } finally {
       setGeneratingKey(false);
     }
@@ -437,22 +435,22 @@ function NewHookModal(props: { onClose: () => void; onSuccess: () => void }) {
           </Show>
 
           <Show when={!warning()}>
-          <div class="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={props.onClose}
-              class="flex-1 px-4 py-2 border rounded-md hover:bg-zinc-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting()}
-              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-            >
-              {submitting() ? "Creating..." : "Create hook"}
-            </button>
-          </div>
+            <div class="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={props.onClose}
+                class="flex-1 px-4 py-2 border rounded-md hover:bg-zinc-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting()}
+                class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {submitting() ? "Creating..." : "Create hook"}
+              </button>
+            </div>
           </Show>
         </form>
       </div>

@@ -1,4 +1,9 @@
-import { assureAdminAuth, parseTapEvent, Tap, type TapEvent } from "@atproto/tap";
+import {
+  assureAdminAuth,
+  parseTapEvent,
+  Tap,
+  type TapEvent,
+} from "@atproto/tap";
 import { createFileRoute } from "@tanstack/solid-router";
 import { ConvexHttpClient } from "convex/browser";
 import crypto from "node:crypto";
