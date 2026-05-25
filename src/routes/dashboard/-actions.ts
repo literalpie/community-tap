@@ -1,7 +1,9 @@
 import { Agent } from "@atproto/api";
+import { Tap } from "@atproto/tap";
 import { createServerFn } from "@tanstack/solid-start";
 import { getCookie } from "@tanstack/solid-start/server";
 import { ConvexHttpClient } from "convex/browser";
+import crypto from "node:crypto";
 import { requireConvexServerSecret } from "~/lib/utils";
 import { getOAuthClient } from "~/auth/client";
 import { createHookRecord, deleteHookRecord, listHookRecords } from "~/lib/pds";
@@ -30,6 +32,31 @@ async function getSessionAgent() {
   const agent = new Agent(session.fetchHandler.bind(session));
   return { agent, did };
 }
+
+async function getTapClient() {
+  const tapUrl = import.meta.env.VITE_TAP_BASE_URL || "http://localhost:2480";
+  const tapPassword = process.env.TAP_ADMIN_PASSWORD;
+  return new Tap(tapUrl, { adminPassword: tapPassword });
+}
+
+export const generateAddRepoApiKey = createServerFn({ method: "POST" }).handler(
+  async () => {
+    const CONVEX_SERVER_SECRET = requireConvexServerSecret();
+    const { did } = await getSessionAgent();
+    const convex = getConvexHttpClient();
+
+    const rawKey = "ct_repo_" + crypto.randomBytes(32).toString("hex");
+    const hash = crypto.createHash("sha256").update(rawKey).digest("hex");
+
+    await convex.mutation(api.users.storeApiKeyHash, {
+      serverSecret: CONVEX_SERVER_SECRET,
+      did,
+      apiKeyHash: hash,
+    });
+
+    return { rawKey };
+  },
+);
 
 export const listHooksFromPDS = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -124,7 +151,21 @@ export const createHookOnPDS = createServerFn({ method: "POST" })
       );
     }
 
-    return { uri: pdsResult.uri, cid: pdsResult.cid };
+    // Register the user's repo with Tap — surface warning but don't fail
+    let tapWarning: string | undefined;
+    try {
+      const tap = await getTapClient();
+      await tap.addRepos([did]);
+    } catch (tapError) {
+      console.error(
+        "[createHook] Tap registration failed (non-fatal):",
+        tapError,
+      );
+      tapWarning =
+        "Hook created but repo may not receive events until Tap registration succeeds.";
+    }
+
+    return { uri: pdsResult.uri, cid: pdsResult.cid, tapWarning };
   });
 
 export const deleteHookOnPDS = createServerFn({ method: "POST" })
@@ -221,6 +262,17 @@ export const syncHooksFromPDS = createServerFn({ method: "POST" }).handler(
     const removed = deleteResults.filter(
       (r) => r.status === "fulfilled",
     ).length;
+
+    // Register the user's repo with Tap — idempotent safety net
+    try {
+      const tap = await getTapClient();
+      await tap.addRepos([did]);
+    } catch (tapError) {
+      console.error(
+        "[syncHooks] Tap registration failed (non-fatal):",
+        tapError,
+      );
+    }
 
     return { added, removed };
   },

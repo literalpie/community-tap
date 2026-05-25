@@ -65,3 +65,54 @@ export const getDeliveryInfo = query({
     };
   },
 });
+
+export const storeApiKeyHash = mutation({
+  args: {
+    serverSecret: v.string(),
+    did: v.string(),
+    apiKeyHash: v.string(),
+  },
+  handler: async (ctx, args) => {
+    requireServerSecret(args.serverSecret);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_did", (q) => q.eq("did", args.did))
+      .first();
+    if (!user) throw new Error("User not found");
+    await ctx.db.patch(user._id, {
+      addRepoApiKeyHash: args.apiKeyHash,
+      addRepoApiKeyCreatedAt: Date.now(),
+    });
+  },
+});
+
+export const findByApiKeyHash = query({
+  args: {
+    serverSecret: v.string(),
+    apiKeyHash: v.string(),
+  },
+  handler: async (ctx, args) => {
+    requireServerSecret(args.serverSecret);
+    return await ctx.db
+      .query("users")
+      .withIndex("by_addRepoApiKeyHash", (q) =>
+        q.eq("addRepoApiKeyHash", args.apiKeyHash),
+      )
+      .first();
+  },
+});
+
+export const hasApiKey = query({
+  args: {
+    serverSecret: v.string(),
+    did: v.string(),
+  },
+  handler: async (ctx, args) => {
+    requireServerSecret(args.serverSecret);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_did", (q) => q.eq("did", args.did))
+      .first();
+    return !!user?.addRepoApiKeyHash;
+  },
+});

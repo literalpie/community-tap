@@ -1,3 +1,6 @@
+See ./PLAN.md for the big picture plan of this project
+See ./README.md for info on how to launch and develop this project.
+
 <!-- convex-ai-start -->
 
 This project uses [Convex](https://convex.dev) as its backend.
